@@ -1,11 +1,12 @@
 # 提交前自动检查。安装：pre-commit install
 # 全部 hook 与 CI（.github/workflows/lint.yml）保持一致。
+#
+# 这里不挂 mypy：pre-commit 会给每个 hook 建隔离环境，mypy 在那个环境里看不到
+# 项目的真实依赖（fastapi / uvicorn / jmcomic / pyyaml），只能靠 ignore_missing_imports
+# 掩盖，反而查不出真问题。mypy 由 lint.yml 的独立 job 在装好依赖的环境里跑，
+# 本地提交前手动跑一次：python -m mypy src/
 default_language_version:
   python: python3
-
-ci:
-  autoupdate_schedule: weekly
-  skip: [mypy]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -35,11 +36,3 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.0
-    hooks:
-      - id: mypy
-        args: [--python-version=3.10]
-        additional_dependencies: []
-        files: ^src/
