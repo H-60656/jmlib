@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-11-10-jmlib-resource-library",
+  "requiredBaselineRefs": [
+    "plan:docs/aegis/plans/2026-11-10-jmlib-resource-library.md",
+    "design:m00322/m00335 Q1-Q5",
+    "source:E:/my world/pictures(1) 2316 zip 25.3GB",
+    "source:E:/my world/pictures/JM 16 loose books",
+    "upstream:JMComic-Crawler-Python jm_plugin.py/jm_downloader.py/jm_option.py/jm_entity.py"
+  ],
+  "deliveredContextRefs": [],
+  "acknowledgedBeforePlanRefs": [
+    "plan:docs/aegis/plans/2026-11-10-jmlib-resource-library.md"
+  ],
+  "citedInPlanRefs": [
+    "plan:Baseline/Authority Refs lines 29-44",
+    "upstream contract line numbers in plan"
+  ],
+  "missingRefs": [],
+  "decision": "continue"
+}

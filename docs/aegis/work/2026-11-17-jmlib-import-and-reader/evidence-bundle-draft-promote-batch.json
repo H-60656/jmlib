@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "promote-batch",
+  "type": "state-receipt",
+  "source": ".tmp/run_promote.py, .tmp/verify_after_promote.py, .tmp/census_gov.py, data/governance_manifest.json, data/jmlib.db, library/",
+  "summary": "654 个已定案 zip 分批走 governance.promote_plan -> promote_apply（每个 zip 一个服务端重算的精确确认串，同卷 rename、零删除、可回滚）：账本 657 条 promote（656 executed + 1 rolled_back，174 个 Aid，created_book 172）；books 185 -> 354，chapters 1474 -> 2130，page_total 61199 -> 89944，_unidentified 861 -> 205 包，archive 2130 包，zip 总数 2335 不变。逐包对账全绿：ROWS_WITHOUT_BYTES 0、BYTES_WITHOUT_ROW 0、VERIFIED_ZIPS 2130 PAGES 89944 与 catalog 一致、unresolved 行 205 = 磁盘 205（两向 0 差异）、PAGE_MISMATCH 0、CHAPTER_COVER_MISSING 0、DUPLICATE_PINDEX 0、PROBLEMS 0、INTEGRITY OK；仅有 3 本历史数据 pindex 不连续（1436338、556734、206661），非本次转正引入。转正后 jmlib index 重建：books 354 / chapters 2130 / pages 89944 / broken 0，与重建前逐项一致；随后为两个短号书回填标签（121=[巨乳,御姐,风的工房,中文]、579=[巨乳,中文]，同时写侧车），再重建一次 WITH_TAGS 180 -> 182 且两书标签仍在。",
+  "verifier": "python .tmp/verify_after_promote.py + python -m jmlib index",
+  "sliceId": "promote-batch",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

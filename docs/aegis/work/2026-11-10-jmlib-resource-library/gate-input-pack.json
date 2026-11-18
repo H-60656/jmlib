@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "baselineRefs": [
+    "docs/aegis/plans/2026-11-10-jmlib-resource-library.md; design m00322/m00335; user m00245/m00269/m00295/m00324/m00501"
+  ],
+  "impactStatement": "docs/aegis/work/2026-11-10-jmlib-resource-library/impact-statement-draft.json",
+  "compatPlan": "Compatibility boundary not yet refined.",
+  "retirementPlan": "verified: 旧 E:/my world/pictures(1) 路径已退役且保留反向回滚清单；download_cover/旧 dir_rule 由 jmlib download 内存 overlay 取代（未改用户 option.yml）；861 未识别保留在 library/_unidentified；library/_incoming 空骨架保留供 rollback",
+  "evidenceBundle": [
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/evidence-bundle-draft-closeout.json",
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/evidence-bundle-draft-p4.json",
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/evidence-bundle-draft-p5.json"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-11-10-jmlib-resource-library",
+  "taskIntentRef": "docs/aegis/work/2026-11-10-jmlib-resource-library/task-intent-draft.json",
+  "baselineRefs": [
+    "docs/aegis/plans/2026-11-10-jmlib-resource-library.md; design m00322/m00335; user m00245/m00269/m00295/m00324/m00501"
+  ],
+  "scopeStatus": "verified: P0-P5 全部落在已批准规格内；未引入 AI/MCP/jmcomic-ai、未改上游两仓库、未联网、未重打 25GB",
+  "compatStatus": "verified: P1/P2/P3/P4/P5 全量回归 18/29/39/ALL/ALL + migrate 3/3；P4 后封面墙 185 本、阅读器续读、体检面板、治理页面真实浏览器复核通过",
+  "retirementStatus": "verified: 旧 E:/my world/pictures(1) 路径已退役且保留反向回滚清单；download_cover/旧 dir_rule 由 jmlib download 内存 overlay 取代（未改用户 option.yml）；861 未识别保留在 library/_unidentified；library/_incoming 空骨架保留供 rollback",
+  "newRiskSignals": [
+    "受限服务下旧 zip 因 ACL 不继承 DSH SID 无法 rename：已改为结构化 refused + 完全权限服务端到端验证；真实联网下载链路本机离线未实测"
+  ],
+  "decision": "continue"
+}

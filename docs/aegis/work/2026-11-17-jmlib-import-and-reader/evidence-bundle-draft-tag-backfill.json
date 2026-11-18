@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "tag-backfill",
+  "type": "finding",
+  "source": ".tmp/fill_tags_all.py, src/jmlib/resolve.py fill_tags, src/jmlib/store.py set_book_tags, src/jmlib/ingest.py merge_meta, data/ingest_metadata.json, data/jmlib.db",
+  "summary": "转正只建目录行，不给标签：复核批把书库推到 439 本后，只有 182 本有标签（早前 D 段补过的那批）。跑 resolve.fill_tags(dry_run=False) 对 store.books_missing_tags() 的 257 本逐本抓 album_info：ok 247 / withTags 247 / written 247 / failed 10，耗时 663s（串行、按 upstream.MIN_INTERVAL_SECONDS=1.5s 节流）。10 个失败是上游已不存在的专辑（MissingAlbumPhotoException）：3748111、3748011、1439474、1436338、1435295、1433139、1427743、1237529、1237128、1237099 —— 这些书本地有包、上游已下架，标签无从补，这属于数据事实而非脚本失败。写入同时落到 books 行与 ingest 侧车（store.set_book_tags + ingest.merge_meta），因此 jmlib index 重建后仍在：WITH_TAGS 182 -> 429，重建前后完全一致（books 439 / chapters 2333 / pages 99824 / unresolved 2 / broken 0），book 121 的短号标签也仍在。",
+  "verifier": "python .tmp/fill_tags_all.py + python -m jmlib index + python .tmp/census.py",
+  "sliceId": "tag-backfill",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

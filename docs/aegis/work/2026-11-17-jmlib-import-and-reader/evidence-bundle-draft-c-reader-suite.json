@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "c-reader-suite",
+  "type": "test-run",
+  "source": ".tmp/run_a_suite.py",
+  "summary": "C1/C2/C4 契约全绿：C1 68（prefs/bookmarks 解析优先级与零字节）、C2 37（阅读器外壳/控件一致/预取上限）、C4 58（五档排序、筛选一致、空的三种含义）",
+  "verifier": "python .tmp/run_a_suite.py",
+  "sliceId": "c-reader-suite",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

@@ -1,0 +1,88 @@
+[project]
+name = "jmlib"
+dynamic = ["version"]
+description = "Local JMComic resource library: chapter-zip archive, index, reader and storage governance"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"  # Minimum: 3.10, Recommended: 3.12+
+authors = [
+    { name = "H-60656", email = "203792230+H-60656@users.noreply.github.com" }
+]
+keywords = ["jmcomic", "manga", "comic", "library", "reader", "archive", "sqlite"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Multimedia :: Graphics :: Viewers",
+]
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "jmcomic>=2.7.11,<3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/H-60656/jmlib"
+Repository = "https://github.com/H-60656/jmlib"
+Issues = "https://github.com/H-60656/jmlib/issues"
+Documentation = "https://github.com/H-60656/jmlib#readme"
+
+[project.scripts]
+jmlib = "jmlib.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/jmlib/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jmlib"]
+
+[tool.hatch.build.targets.sdist]
+# 只包含必要的文件
+include = [
+    "/src",
+    "/web",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "ruff>=0.14.11",
+    "mypy>=1.8.0",
+    "pytest>=8.0",
+]

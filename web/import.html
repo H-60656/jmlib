@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jmlib · 导入面板</title>
+<style>
+  :root { color-scheme: dark; --bg:#12151b; --panel:#1b202a; --line:#2c3442;
+          --text:#e8ecf3; --muted:#98a4b6; --accent:#6ea8fe; --danger:#ff8585;
+          --ok:#7fd1a4; --warn:#ffc978; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:10px;
+           align-items:center; padding:12px 18px; background:rgba(18,21,27,.95);
+           border-bottom:1px solid var(--line); backdrop-filter:blur(6px); }
+  h1 { font-size:17px; margin:0 12px 0 0; white-space:nowrap; }
+  a.back { color:var(--accent); text-decoration:none; padding:8px 10px;
+           border:1px solid var(--line); border-radius:8px; }
+  a.back:hover { border-color:var(--accent); }
+  button, input, select { font:inherit; }
+  button { padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+           background:var(--panel); color:var(--text); cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.primary { border-color:var(--accent); }
+  input { padding:8px 10px; border-radius:8px; border:1px solid var(--line);
+          background:#151a23; color:var(--text); width:100%; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  #status { padding:10px 18px; color:var(--muted); font-size:13px; }
+  #status.error { color:var(--danger); }
+  #status.ok { color:var(--ok); }
+  main { padding:0 18px 48px; display:grid; gap:14px; }
+  .notice { padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+            background:var(--panel); color:var(--muted); font-size:13px; }
+  .summary { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { padding:4px 10px; border:1px solid var(--line); border-radius:20px; font-size:12px; }
+  .chip.warn { color:var(--warn); border-color:#4a3d22; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card h2 { font-size:15px; margin:0 0 8px; }
+  .card p.desc { color:var(--muted); font-size:12px; margin:0 0 12px; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .toolbar input { flex:1 1 260px; width:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:7px 6px; border-bottom:1px solid var(--line);
+           vertical-align:top; }
+  th { color:var(--muted); font-weight:500; font-size:12px; position:sticky; top:0;
+       background:var(--panel); }
+  td.dir { word-break:break-word; max-width:420px; }
+  td.num { text-align:right; white-space:nowrap; color:var(--muted); }
+  .tag { font-size:11px; padding:1px 7px; border:1px solid var(--line); border-radius:5px;
+         color:var(--muted); white-space:nowrap; }
+  .tag.ok { color:var(--ok); } .tag.warn { color:var(--warn); border-color:#4a3d22; }
+  .tag.bad { color:var(--danger); border-color:#4a2c2c; }
+  .scroller { max-height:52vh; overflow:auto; border:1px solid var(--line); border-radius:10px; }
+  .planbox { margin-top:12px; padding:12px 14px; border:1px solid var(--line);
+             border-radius:10px; background:#151a23; font-size:12px; }
+  .planbox h3 { font-size:13px; margin:0 0 8px; }
+  .planbox ul { margin:6px 0; padding-left:18px; color:var(--muted); max-height:24vh; overflow:auto; }
+  .token { display:block; margin:8px 0; padding:8px 10px; border-radius:8px;
+           background:#0f131a; border:1px dashed var(--accent); color:var(--accent);
+           font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .empty { padding:22px 12px; text-align:center; color:var(--muted); }
+  dialog { border:1px solid var(--line); border-radius:12px; background:var(--panel);
+           color:var(--text); max-width:min(760px,94vw); width:100%; padding:18px; }
+  dialog::backdrop { background:rgba(0,0,0,.65); }
+  dialog h2 { font-size:16px; margin:0 40px 8px 0; word-break:break-word; }
+  .close { float:right; }
+  .cand { border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+          background:#151a23; display:grid; gap:6px; margin-bottom:8px; }
+  .cand .top { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .cand .aid { font-family:ui-monospace,Consolas,monospace; color:var(--accent); }
+  .cand .name { word-break:break-word; }
+  .cand .meta { font-size:11.5px; color:var(--muted); }
+  .cand .hits { font-size:11.5px; color:var(--muted); }
+  .cand-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .state { font-size:12px; }
+  .state.ok { color:var(--ok); } .state.warn { color:var(--warn); }
+  @media (max-width:560px) { header { padding:10px 12px; } main { padding:0 12px 30px; }
+                             h1 { font-size:15px; } .row2 { grid-template-columns:1fr; }
+                             td.dir { max-width:180px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>jmlib · 导入面板</h1>
+  <a class="back" href="/">← 返回书库</a>
+  <a class="back" href="/health">存储体检 ↗</a>
+  <a class="back" href="/governance">受控治理 ↗</a>
+  <button id="refresh" type="button" aria-label="重新载入导入清单">刷新清单</button>
+</header>
+<div id="status" role="status" aria-live="polite">正在载入导入清单…</div>
+<main id="main" aria-busy="true"></main>
+
+<dialog id="cands" aria-label="上游候选与 Aid 裁决">
+  <button class="close" id="cands-close" type="button" aria-label="关闭">✕</button>
+  <h2 id="cands-title"></h2>
+  <p class="desc" id="cands-note" style="color:#98a4b6;font-size:12px;margin:0 0 10px"></p>
+  <div id="cands-body"></div>
+  <div class="row2" style="margin-top:10px">
+    <div>
+      <label for="c-manual">手工填写 Aid（1–7 位数字）</label>
+      <input id="c-manual" inputmode="numeric" autocomplete="off" placeholder="例如 1454103">
+    </div>
+    <div>
+      <label for="c-query">搜索关键词（留空用目录名）</label>
+      <input id="c-query" autocomplete="off" placeholder="可改成作品原名再搜">
+    </div>
+  </div>
+  <div class="toolbar" style="margin-top:10px">
+    <button id="c-search" type="button">重新搜索</button>
+    <button id="c-choose" type="button" class="primary">采用填写的 Aid</button>
+    <button id="c-skip" type="button">跳过此目录</button>
+    <span class="state" id="cands-state" role="status" aria-live="polite"></span>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  let manifest = null;
+  let plan = null;
+  let single = null;
+  let incoming = null;
+  let overviewRoots = [];
+  let lastOverview = null;
+  let busy = false;
+  let current = null;
+  let loadTimer = null;
+  const LOAD_TIMEOUT_MS = 15000;
+
+  function setStatus(msg, cls) {
+    const el = $("status");
+    el.textContent = msg;
+    el.className = cls || "";
+  }
+
+  function lock(on) {
+    document.querySelectorAll("main button, main input").forEach((b) => { b.disabled = on; });
+  }
+
+  async function post(url, body) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    let d = null;
+    try { d = await r.json(); } catch (_) { d = null; }
+    if (!r.ok) throw new Error((d && (d.detail || d.error)) || ("HTTP " + r.status));
+    return d || {};
+  }
+
+  function loadFailed(msg) {
+    $("main").innerHTML = '<div class="empty">导入清单载入失败：' + esc(msg) +
+      '<br><button id="retry" type="button">重试</button></div>';
+    $("main").setAttribute("aria-busy", "false");
+    $("retry").addEventListener("click", () => load(true));
+    setStatus("导入清单载入失败：" + msg, "error");
+  }
+
+  async function load(isRetry, successMessage) {
+    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+    $("main").setAttribute("aria-busy", "true");
+    if (!isRetry) $("main").innerHTML = '<div class="empty">正在读取清单…</div>';
+    loadTimer = setTimeout(() => {
+      loadTimer = null;
+      loadFailed("请求超时，请点「重试」重新载入");
+    }, LOAD_TIMEOUT_MS);
+    try {
+      const [overview, man, inc] = await Promise.all([
+        fetch("/api/import").then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+        fetch("/api/import/manifest").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/import/incoming").then((r) => (r.ok ? r.json() : null)),
+      ]);
+      clearTimeout(loadTimer); loadTimer = null;
+      manifest = man;
+      incoming = inc;
+      render(overview);
+      // A caller that just wrote something passes its own message: reloading the
+      // list must not erase the only confirmation the user gets.
+      setStatus(successMessage || (man
+        ? "清单已载入 · 扫描与候选搜索都只读，只有输入精确确认串才会入库。"
+        : "还没有导入清单 · 先选一个根目录扫描。"), successMessage ? "ok" : "");
+    } catch (err) {
+      clearTimeout(loadTimer); loadTimer = null;
+      loadFailed(err.message || String(err));
+    }
+  }
+
+  function summaryChips(s) {
+    if (!s) return "";
+    const parts = [
+      s.dirs + " 个目录",
+      s.valid_aids + " 个可用车号",
+      s.no_reliable_aid + " 个需裁决",
+      s.already_in_library + " 个已在库",
+      s.images + " 张图",
+      s.near_duplicate_pairs + " 组疑似重复",
+      s.series_pairs + " 组同系列",
+    ];
+    return parts.map((p, i) => '<span class="chip' + (i === 2 && s.no_reliable_aid ? " warn" : "") +
+      '">' + esc(p) + "</span>").join("");
+  }
+
+  // Mirrors import_scan.sweep_blockers(): hints that make a row a question rather
+  // than a task.  The server also refuses to sweep those rows into an unpicked
+  // batch, so this only decides how the row looks and whether it starts checked.
+  const BLOCKING_HINTS = ["no_aid", "invalid_aid", "suspected_same"];
+
+  function sweepBlocked(e) {
+    const hints = e.hints || [];
+    if (hints.some((h) => BLOCKING_HINTS.indexOf(h) >= 0)) return true;
+    // A magazine-style name only blocks when the Aid was read out of the issue
+    // number instead of from a {Aid}/{Pindex}/ tree.
+    return hints.indexOf("magazine_like") >= 0 && e.aid_source !== "subdir";
+  }
+
+  const HINT_LABELS = {
+    no_aid: ["无车号", "bad"],
+    invalid_aid: ["车号不可信", "bad"],
+    weak_aid_source: ["车号来源弱", "warn"],
+    magazine_like: ["期刊名", "warn"],
+    suspected_same: ["疑似同一本", "warn"],
+    duplicate_aid: ["同 Aid 分裂", "warn"],
+    cover_only: ["仅封面", "warn"],
+    empty_dir: ["空目录", "bad"],
+    already_in_library: ["已在库", "ok"],
+  };
+
+  function entryRow(e) {
+    const eff = e.effective_aid || "";
+    const hints = e.hints || [];
+    const tags = hints.map((h) => {
+      const [label, cls] = HINT_LABELS[h] || [h, ""];
+      return '<span class="tag ' + cls + '">' + esc(label) + "</span>";
+    });
+    if (e.resolution_state === "chosen") tags.push('<span class="tag ok">已裁决</span>');
+    if (e.resolution_state === "skipped") tags.push('<span class="tag">已跳过</span>');
+    // A hint is a question, not a verdict: hinted rows start unchecked so a stray
+    // "import everything" cannot sweep in a guessed Aid.  The checkbox stays
+    // enabled — ticking it *is* the human answer.
+    const blocked = sweepBlocked(e);
+    const selectable = eff && !e.in_library;
+    return '<tr data-rel="' + esc(e.rel_path) + '">' +
+      '<td><input type="checkbox" class="pick" value="' + esc(e.rel_path) + '"' +
+        (selectable && !blocked ? " checked" : "") + (selectable ? "" : " disabled") +
+        (blocked ? ' title="有需要人工确认的提示，勾选表示你已确认"' : "") + '></td>' +
+      '<td class="dir">' + esc(e.dir) + " " + tags.join(" ") + "</td>" +
+      '<td><input class="aidbox" data-rel="' + esc(e.rel_path) + '" value="' + esc(eff) +
+        '" inputmode="numeric" style="width:92px" aria-label="车号"></td>' +
+      '<td class="num">' + (e.chapter_count || 0) + "</td>" +
+      '<td class="num">' + (e.image_count || 0) + "</td>" +
+      '<td><button class="cand-btn" type="button" data-rel="' + esc(e.rel_path) +
+        '" data-dir="' + esc(e.dir) + '">候选</button></td>' +
+      "</tr>";
+  }
+
+  function singleCard() {
+    const roots = (overviewRoots || []).join("，") || "（未配置）";
+    let body = '<div class="toolbar"><input id="s-path" placeholder="目录绝对路径（必须在本机白名单内）">' +
+      '<input id="s-aid" inputmode="numeric" placeholder="车号 1–7 位" style="flex:0 0 130px;width:130px">' +
+      '<input id="s-title" placeholder="书名（可留空）" style="flex:1 1 180px">' +
+      '<button id="s-plan" type="button" class="primary">预览</button></div>' +
+      '<p class="desc" style="margin:8px 0 0">允许的根：' + esc(roots) +
+      ' · 手工添加只读取该目录，不动源文件；已存在的 Aid 一律跳过不覆盖。</p>' +
+      '<div id="s-box"></div>';
+    if (single) {
+      const it = single.item || {};
+      body += '<div class="planbox"><h3>添加清单（待确认）</h3>' +
+        '<div class="summary"><span class="chip">' + esc(it.aid) + "</span>" +
+        '<span class="chip">' + esc(it.chapter_count) + " 章</span>" +
+        '<span class="chip">' + esc(it.images) + " 张图</span>" +
+        '<span class="chip">' + esc(it.kind) + "</span>" +
+        (it.action === "skip-existing" ? '<span class="chip warn">已在库，将跳过</span>' : "") +
+        "</div>" +
+        '<p class="desc" style="margin:8px 0 0">来源：' + esc(it.local_path || "") + "</p>" +
+        (single.conflicts && single.conflicts.length
+          ? '<ul style="font-size:12px;color:#ffc978">' +
+            single.conflicts.map((c) => "<li>" + esc(c) + "</li>").join("") + "</ul>" : "") +
+        '<code class="token">' + esc(single.confirm_token) + "</code>" +
+        '<label for="s-confirm">把上面的确认串原样粘贴到这里</label>' +
+        '<input id="s-confirm" autocomplete="off" spellcheck="false">' +
+        '<div class="toolbar" style="margin-top:10px">' +
+        '<button id="s-go" type="button" class="primary" disabled>执行添加</button>' +
+        '<span class="state" id="s-state" role="status" aria-live="polite"></span></div></div>';
+    }
+    return '<div class="card"><h2>手工添加一本（B.1）</h2>' + body + "</div>";
+  }
+
+  function incomingCard() {
+    const inc = incoming || { exists: false, items: [], count: 0, hint: "" };
+    const skel = inc.skeletons || [];
+    let body = '<p class="desc">把 zip 或图片目录放进 <code>library/_incoming/</code>，这里只读列举，' +
+      "不会自动入库。投放夹：" + esc(inc.root || "") + "</p>";
+    if (!inc.count) {
+      body += '<div class="empty">' + esc(inc.hint || "投放夹是空的。") + "</div>";
+    } else {
+      body += '<div class="scroller"><table><thead><tr><th>名称</th><th style="width:64px">类型</th>' +
+        '<th style="width:90px">车号</th><th style="width:70px">图</th></tr></thead><tbody>' +
+        inc.items.map((it) => "<tr><td>" + esc(it.name) + "</td><td>" + esc(it.kind) +
+          "</td><td>" + esc(it.aid || "—") + "</td><td class=\"num\">" +
+          esc(it.image_count == null ? "—" : it.image_count) + "</td></tr>").join("") +
+        "</tbody></table></div>" +
+        '<p class="desc" style="margin:8px 0 0">入库请走上面的「手工添加」：把上面显示的目录路径填进去。' +
+        "投放夹本身不会被移动或删除。</p>";
+    }
+    if (skel.length) {
+      body += '<p class="desc" style="margin:8px 0 0">另有 ' + esc(skel.length) +
+        " 个空的世代目录骨架（迁移回滚预留，不是待入库的书）：" + esc(skel.join("、")) + "</p>";
+    }
+    return '<div class="card"><h2>投放式添加（B.2）</h2>' + body + "</div>";
+  }
+
+  function render(overview) {
+    overview = overview || {};
+    lastOverview = overview;
+    overviewRoots = overview.roots || [];
+    const parts = [];
+    if (!manifest) {
+      parts.push('<div class="card"><h2>先扫描待入库目录</h2>' +
+        '<p class="desc">扫描只读：不移动、不改名、不写库。根目录必须在服务端白名单内' +
+        '（环境变量 JMLIB_IMPORT_ROOTS，或 library/_incoming）。</p>' +
+        '<div class="toolbar"><input id="root" placeholder="待入库根目录绝对路径" value="' +
+        esc((overview.roots || [])[0] || "") + '">' +
+        '<button id="scan" type="button" class="primary">扫描</button></div></div>');
+    } else {
+      parts.push('<div class="card"><h2>清单摘要</h2>' +
+        '<div class="summary">' + summaryChips(manifest.summary) + "</div>" +
+        '<p class="desc" style="margin-top:10px">根目录：' + esc(manifest.root) +
+        " · 生成于 " + esc(manifest.createdAt || "") + "</p>" +
+        '<div class="toolbar"><input id="root" value="' + esc(manifest.requested_root || manifest.root) +
+        '"><button id="scan" type="button">重新扫描</button></div></div>');
+    }
+
+    if (manifest) {
+      const dup = manifest.duplicate_groups || {};
+      const dupKeys = Object.keys(dup);
+      const near = manifest.near_duplicates || [];
+      const series = manifest.series_pairs || [];
+      if (dupKeys.length || near.length || series.length) {
+        parts.push('<div class="card"><h2>需要人工判断的结构异常</h2>' +
+          '<p class="desc">这些只是证据，绝不自动合并。同一 Aid 的多个目录会合并成一本入库；' +
+          '疑似重复由你决定是同一本还是两本。</p><ul style="font-size:12.5px;color:#98a4b6">' +
+          dupKeys.map((aid) => "<li>Aid " + esc(aid) + " 分裂：" + esc(dup[aid].join(" | ")) + "</li>").join("") +
+          near.map((p) => "<li>疑似同一本（" + esc(p.score) + "）：" + esc(p.a) + " ↔ " + esc(p.b) + "</li>").join("") +
+          series.map((p) => "<li>同系列不同卷（" + esc((p.volumes || []).join("/")) + "）：" +
+            esc(p.a) + " ↔ " + esc(p.b) + "</li>").join("") +
+          "</ul></div>");
+      }
+
+      parts.push('<div class="card"><h2>目录清单</h2>' +
+        '<p class="desc">勾选要入库的目录（已在库的不可选）；车号可手改。' +
+        '「候选」只会为这一条目录访问一次上游搜索。</p>' +
+        '<div class="scroller"><table><thead><tr><th style="width:34px"></th>' +
+        '<th>目录</th><th style="width:104px">车号</th><th style="width:56px">章</th>' +
+        '<th style="width:64px">图</th><th style="width:70px"></th></tr></thead><tbody>' +
+        (manifest.entries.length ? manifest.entries.map(entryRow).join("") :
+          '<tr><td colspan="6"><div class="empty">清单是空的——确认根目录是否正确。</div></td></tr>') +
+        "</tbody></table></div>" +
+        '<div class="toolbar" style="margin-top:10px">' +
+        '<button id="pick-all" type="button">全选可入库</button>' +
+        '<button id="pick-none" type="button">全不选</button>' +
+        '<button id="make-plan" type="button" class="primary">生成导入清单</button>' +
+        "</div></div>");
+    }
+
+    if (plan) {
+      const s = plan.summary;
+      parts.push('<div class="card"><h2>导入清单（待确认）</h2>' +
+        '<div class="summary"><span class="chip">' + esc(s.books) + " 本</span>" +
+        '<span class="chip">' + esc(s.chapters) + " 章</span>" +
+        '<span class="chip">' + esc(s.images) + " 张图</span>" +
+        '<span class="chip">' + esc(s.skipped_existing) + " 本已在库将跳过</span>" +
+        (s.conflicts ? '<span class="chip warn">' + esc(s.conflicts) + " 条冲突</span>" : "") +
+        "</div>" +
+        (plan.conflicts.length ? '<ul style="font-size:12px;color:#ffc978">' +
+          plan.conflicts.map((c) => "<li>" + esc(c) + "</li>").join("") + "</ul>" : "") +
+        '<div class="planbox"><h3>确认串（精确匹配才执行）</h3>' +
+        '<code class="token">' + esc(plan.confirm_token) + "</code>" +
+        '<label for="apply-confirm">把上面的确认串原样粘贴到这里</label>' +
+        '<input id="apply-confirm" autocomplete="off" spellcheck="false">' +
+        '<div class="toolbar" style="margin-top:10px">' +
+        '<button id="apply-go" type="button" class="primary" disabled>执行入库</button>' +
+        '<span class="state" id="apply-state" role="status" aria-live="polite"></span></div>' +
+        '<p class="desc" style="margin:10px 0 0">执行只读源目录、只新增归档；已存在的 Aid 一律跳过且不覆盖。' +
+        '结果写入 data/import_rollback.json，可凭回滚确认串撤销。</p></div></div>');
+    }
+
+    const pending = overview.rollback;
+    if (pending) {
+      parts.push('<div class="card"><h2>上一次导入可回滚</h2>' +
+        '<p class="desc">' + esc(pending.createdAt || "") + " · " + esc(pending.books) +
+        " 本书。回滚只移除那一次导入创建的文件，源目录不受影响。</p>" +
+        '<button id="rollback-load" type="button">查看回滚确认串</button>' +
+        '<div id="rollback-box"></div></div>');
+    }
+
+    parts.push(singleCard());
+    parts.push(incomingCard());
+
+    $("main").innerHTML = parts.join("");
+    $("main").setAttribute("aria-busy", "false");
+    wire();
+    if (busy) lock(true);
+  }
+
+  function wire() {
+    const scan = $("scan");
+    if (scan) scan.addEventListener("click", doScan);
+
+    document.querySelectorAll(".cand-btn").forEach((b) => {
+      b.addEventListener("click", () => openCands(b.dataset.rel, b.dataset.dir));
+    });
+
+    document.querySelectorAll(".aidbox").forEach((box) => {
+      box.addEventListener("change", async () => {
+        const aid = box.value.trim();
+        const rel = box.dataset.rel;
+        try {
+          if (aid) {
+            await post("/api/import/resolve", { rel_path: rel, aid: aid, state: "chosen" });
+            setStatus("已记录车号：" + aid, "ok");
+          } else {
+            await post("/api/import/resolve", { rel_path: rel, state: "pending" });
+            setStatus("已清空裁决", "");
+          }
+          plan = null;
+          load(true);
+        } catch (e) {
+          setStatus("记录车号失败：" + e.message, "error");
+        }
+      });
+    });
+
+    const all = $("pick-all");
+    if (all) all.addEventListener("click", () => {
+      document.querySelectorAll(".pick:not(:disabled)").forEach((c) => { c.checked = true; });
+    });
+    const none = $("pick-none");
+    if (none) none.addEventListener("click", () => {
+      document.querySelectorAll(".pick").forEach((c) => { c.checked = false; });
+    });
+
+    const mk = $("make-plan");
+    if (mk) mk.addEventListener("click", doPlan);
+
+    const go = $("apply-go");
+    const confirmInput = $("apply-confirm");
+    if (go && confirmInput) {
+      const sync = () => { go.disabled = busy || confirmInput.value.trim() !== (plan ? plan.confirm_token : ""); };
+      confirmInput.addEventListener("input", sync);
+      confirmInput.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" && !go.disabled) { ev.preventDefault(); doApply(); }
+      });
+      go.addEventListener("click", doApply);
+      sync();
+    }
+
+    const rl = $("rollback-load");
+    if (rl) rl.addEventListener("click", loadRollback);
+
+    const sp = $("s-plan");
+    if (sp) sp.addEventListener("click", doSinglePlan);
+    const sgo = $("s-go");
+    const sConfirm = $("s-confirm");
+    if (sgo && sConfirm) {
+      const sync = () => {
+        sgo.disabled = busy || sConfirm.value.trim() !== (single ? single.confirm_token : "");
+      };
+      sConfirm.addEventListener("input", sync);
+      sConfirm.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" && !sgo.disabled) { ev.preventDefault(); doSingleApply(); }
+      });
+      sgo.addEventListener("click", doSingleApply);
+      sync();
+    }
+  }
+
+  async function doSinglePlan() {
+    const path = ($("s-path").value || "").trim();
+    const aid = ($("s-aid").value || "").trim();
+    const title = ($("s-title").value || "").trim();
+    if (!path) { setStatus("先填要添加的目录绝对路径", "error"); return; }
+    if (!/^\d{1,7}$/.test(aid)) { setStatus("车号必须是 1–7 位数字", "error"); return; }
+    busy = true; setStatus("正在预览（只读）…");
+    try {
+      const r = await post("/api/import/add/plan", { local_path: path, aid: aid, title: title });
+      busy = false;
+      if (!r.ok) {
+        single = null;
+        setStatus("预览被拒绝：" + (r.error || r.status), "error");
+        render(lastOverview);
+        return;
+      }
+      single = r;
+      render(lastOverview);
+      setStatus("预览已生成：输入确认串才能写入。", "ok");
+    } catch (e) {
+      busy = false;
+      setStatus("预览失败：" + e.message, "error");
+    }
+  }
+
+  async function doSingleApply() {
+    if (!single) return;
+    busy = true;
+    const state = $("s-state");
+    if (state) { state.textContent = "正在写入…"; state.className = "state"; }
+    try {
+      const r = await post("/api/import/add/apply",
+        { plan: single, confirm: ($("s-confirm").value || "") });
+      busy = false;
+      if (!r.ok) {
+        setStatus("添加被拒绝：" + (r.error || r.status), "error");
+        if (state) { state.textContent = "被拒绝：" + (r.error || r.status); state.className = "state warn"; }
+        return;
+      }
+      single = null;
+      setStatus(r.message, "ok");
+      await load(true, r.message);
+    } catch (e) {
+      busy = false;
+      setStatus("添加失败：" + e.message, "error");
+    }
+  }
+
+  async function doScan() {
+    const root = ($("root") && $("root").value || "").trim();
+    busy = true; lock(true); setStatus("正在扫描目录（只读）…");
+    try {
+      const r = await post("/api/import/scan", { root: root, rescan: true });
+      plan = null;
+      single = null;
+      busy = false;
+      await load(true, "扫描完成：" + r.summary.dirs + " 个目录 · " + r.summary.images + " 张图");
+    } catch (e) {
+      busy = false; lock(false);
+      setStatus("扫描失败：" + e.message, "error");
+    }
+  }
+
+  async function doPlan() {
+    const picked = Array.from(document.querySelectorAll(".pick:checked")).map((c) => c.value);
+    if (!picked.length) { setStatus("先勾选至少一个目录", "error"); return; }
+    const chosen = {};
+    document.querySelectorAll(".aidbox").forEach((b) => {
+      if (b.value.trim()) chosen[b.dataset.rel] = b.value.trim();
+    });
+    busy = true; lock(true); setStatus("正在生成导入清单（只读）…");
+    try {
+      plan = await post("/api/import/plan", { selected: picked });
+      busy = false;
+      render(await (await fetch("/api/import")).json());
+      setStatus("清单已生成：输入确认串才能执行。", "ok");
+    } catch (e) {
+      busy = false; lock(false);
+      setStatus("生成清单失败：" + e.message, "error");
+    }
+  }
+
+  async function doApply() {
+    if (!plan) return;
+    const confirm = $("apply-confirm").value;
+    busy = true; lock(true); setStatus("正在执行入库…");
+    try {
+      const r = await post("/api/import/apply", { plan: plan, confirm: confirm });
+      if (!r.ok) {
+        busy = false; lock(false);
+        setStatus("入库被拒绝：" + (r.error || r.status), "error");
+        return;
+      }
+      plan = null;
+      busy = false;
+      await load(true, r.message);
+    } catch (e) {
+      busy = false; lock(false);
+      setStatus("入库失败：" + e.message, "error");
+    }
+  }
+
+  async function openCands(rel, dir) {
+    current = { rel: rel, dir: dir };
+    $("cands-title").textContent = dir;
+    $("cands-note").textContent = "候选来自上游标题搜索，只发送标题关键词，不上传任何归档字节；" +
+      "分数只是提示，最终由你裁决。";
+    $("cands-body").innerHTML = '<div class="empty">正在读取候选…</div>';
+    $("cands-state").textContent = "";
+    $("c-manual").value = "";
+    $("c-query").value = "";
+    $("cands").showModal();
+    await fetchCands(false);
+  }
+
+  async function fetchCands(force) {
+    if (!current) return;
+    const state = $("cands-state");
+    state.textContent = "正在搜索…";
+    state.className = "state";
+    try {
+      const r = await post("/api/import/candidates", {
+        rel_path: current.rel,
+        query: $("c-query").value.trim(),
+        force: !!force,
+      });
+      const cands = r.candidates || [];
+      let html = "";
+      if (r.failure) {
+        html += '<div class="empty">搜索失败（' + esc(r.failure) + "）：" + esc(r.error || "") +
+          '<br>可以改关键词重试，或直接手工填 Aid / 跳过。</div>';
+      } else if (!cands.length) {
+        html += '<div class="empty">没有搜到候选。改关键词再搜，或直接手工填 Aid / 跳过。</div>';
+      } else {
+        html += cands.map((c) => '<div class="cand">' +
+          '<div class="top"><span class="aid">' + esc(c.id) + "</span>" +
+          '<span class="name">' + esc(c.name || "") + "</span></div>" +
+          '<div class="meta">分数 ' + esc(c.score) + (r.auto_ok ? " · 高置信（仍需你确认）" : "") +
+          (r.cached ? " · 来自缓存" : "") + "</div>" +
+          (c.hits && c.hits.length ? '<div class="hits">命中：' + esc(c.hits.join("、")) + "</div>" : "") +
+          '<div class="cand-actions"><button type="button" class="use" data-aid="' + esc(c.id) +
+          '">采用这个 Aid</button></div></div>').join("");
+      }
+      $("cands-body").innerHTML = html;
+      document.querySelectorAll("#cands-body .use").forEach((b) => {
+        b.addEventListener("click", () => { $("c-manual").value = b.dataset.aid; });
+      });
+      state.textContent = r.cached ? "候选已载入（缓存）" : "候选已载入";
+      state.className = "state ok";
+    } catch (e) {
+      $("cands-body").innerHTML = '<div class="empty">搜索请求失败：' + esc(e.message) + "</div>";
+      state.textContent = "失败：" + e.message;
+      state.className = "state warn";
+    }
+  }
+
+  function wireDialog() {
+    $("cands-close").addEventListener("click", () => $("cands").close());
+    $("c-search").addEventListener("click", () => fetchCands(true));
+    $("c-choose").addEventListener("click", async () => {
+      const aid = $("c-manual").value.trim();
+      if (!/^\d{1,7}$/.test(aid)) {
+        $("cands-state").textContent = "Aid 必须是 1–7 位数字";
+        $("cands-state").className = "state warn";
+        return;
+      }
+      try {
+        await post("/api/import/resolve", { rel_path: current.rel, aid: aid, state: "chosen" });
+        $("cands").close();
+        plan = null;
+        load(true, "已采用 Aid " + aid);
+      } catch (e) {
+        $("cands-state").textContent = "记录失败：" + e.message;
+        $("cands-state").className = "state warn";
+      }
+    });
+    $("c-skip").addEventListener("click", async () => {
+      try {
+        await post("/api/import/resolve", {
+          rel_path: current.rel, state: "skipped", note: "人工跳过", query: $("c-query").value.trim(),
+        });
+        $("cands").close();
+        plan = null;
+        load(true, "已跳过该目录");
+      } catch (e) {
+        $("cands-state").textContent = "跳过失败：" + e.message;
+        $("cands-state").className = "state warn";
+      }
+    });
+  }
+
+  async function loadRollback() {
+    const box = $("rollback-box");
+    box.innerHTML = '<div class="empty">正在读取…</div>';
+    try {
+      const r = await fetch("/api/import/rollback").then((x) => x.json());
+      if (!r.pending) { box.innerHTML = '<div class="empty">没有待回滚的导入。</div>'; return; }
+      box.innerHTML = '<div class="planbox"><code class="token">' + esc(r.pending.confirm_token) +
+        '</code><label for="rb-confirm">粘贴回滚确认串</label>' +
+        '<input id="rb-confirm" autocomplete="off" spellcheck="false">' +
+        '<div class="toolbar" style="margin-top:10px"><button id="rb-go" type="button">执行回滚</button>' +
+        '<span class="state" id="rb-state" role="status" aria-live="polite"></span></div></div>';
+      $("rb-go").addEventListener("click", async () => {
+        const state = $("rb-state");
+        try {
+          const out = await post("/api/import/rollback", { confirm: $("rb-confirm").value });
+          state.textContent = out.ok ? out.message : ("被拒绝：" + (out.error || out.status));
+          state.className = "state " + (out.ok ? "ok" : "warn");
+          if (out.ok) load(true);
+        } catch (e) {
+          state.textContent = "回滚失败：" + e.message;
+          state.className = "state warn";
+        }
+      });
+    } catch (e) {
+      box.innerHTML = '<div class="empty">读取失败：' + esc(e.message) + "</div>";
+    }
+  }
+
+  $("refresh").addEventListener("click", () => load(true));
+  wireDialog();
+  load(false);
+})();
+</script>
+</body>
+</html>

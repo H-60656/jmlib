@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "review-batch",
+  "type": "state-receipt",
+  "source": ".tmp/review_sheet.py, .tmp/preflight_suggestions.py, .tmp/adopt_suggestions.py, .tmp/adopt_last_two.py, .tmp/run_promote.py, .tmp/verify_after_promote.py, data/governance_manifest.json, data/jmlib.db, library/",
+  "summary": "复核剩余 88 个未定案单元并全部处置：先用页面级证据（本地页数 vs 上游 photo 页数、中文/无修正标签、逐字同标题、已入库/同 Aid 撞车）把 85 条 pending + 3 条 skipped 压成 83 条明示建议，83/83 均通过 governance.promote_plan 预检（覆盖 205 个 zip 里的 200 个）；随后按用户「按名称自行判断」的授权写入 id_resolution（CHOSEN 84 / SKIPPED 2 / LEFT 2，WROTE 86 FAILED 0）。两条人工例外有独立测量支撑：121 判为重复投稿（库里 121/1 同为 204 页）而 skip；601875 与库内 50 页不同页数，作为同一专辑的另一话转正为 pindex 2；533565 两单元是同一份 79 页上传，只保留 JM(1) 那个。最后两条人眼也按证据定案：Ayaka Shienishi 2 即 [yam] あやかしえにし2【FANZA限定特典付き】(1219830，上游 184 页 = 本地 184 页，与同批转正的上一卷 380757 同系列)，クール系店员取 1192982（1193191 为同一作品第二次上传，作者/标题/55 页/中文无修正全同）。转正执行：先 3 单元 7 zip 小样，再 run_promote.py --all 194 zip 0 失败（25.3s），最后 2 zip，共 86 单元 203 zip，每个 zip 一个服务端重算的精确确认串、同卷 rename、零删除、可逐条 rollback。账本 promote 累计 860 条动作。状态：books 354 -> 439，chapters 2130 -> 2333，page_total 89944 -> 99824，_unidentified 205 -> 2 包，archive 2333 包，zip 总数 2335 不变；id_resolution pending 0 / chosen 260 / skipped 2。逐包对账全绿：ROWS_WITHOUT_BYTES 0、BYTES_WITHOUT_ROW 0、unresolved 行 2 = 磁盘 2（两向 0 差异）、VERIFIED_ZIPS 2333 PAGES 99824 与 catalog 一致、PAGE_MISMATCH 0、CHAPTER_COVER_MISSING 0、DUPLICATE_PINDEX 0、PROBLEMS 0、INTEGRITY OK；重建 jmlib index：books 439 / chapters 2333 / pages 99824 / broken 0，与重建前逐项一致（WITH_TAGS 182，其余 257 本由 .tmp/fill_tags_all.py 后续回填）。留在 _unidentified 的 2 个包是两个已判重复投稿的文件（121姊乳榨精的性爱、[白杨汉化组][蟹村饭店] ウェプト样），按零删除原则原地保留、id_resolution 记为 skipped。",
+  "verifier": "python .tmp/verify_after_promote.py + python -m jmlib index",
+  "sliceId": "review-batch",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

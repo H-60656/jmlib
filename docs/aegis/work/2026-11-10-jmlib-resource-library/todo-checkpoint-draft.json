@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-11-10-jmlib-resource-library",
+  "currentTodo": "交付完成：jmlib 资源库 P0–P5 已验证",
+  "completedTodos": [
+    "P0–P5 全部分期完成；P4 浏览器复核；P5 受控治理端到端复核；最终全量回归；测试痕迹清理"
+  ],
+  "activeSlice": "closeout",
+  "evidenceRefs": [
+    "p4-browser-verify,p5-real-promote-rollback,p5-ui-feedback,final-regression,final-state-receipt"
+  ],
+  "blockedOn": null,
+  "nextStep": "无；交付",
+  "updatedAt": "2026-11-12"
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "short-aid-contract",
+  "type": "finding",
+  "source": "src/jmlib/aid.py, src/jmlib/{api,api_resolve,api_prefs,health,indexer,import_scan,ingest,governance,resolve,migrate,api_import,import_apply}.py, web/{import.html,assets/resolve.js,assets/read.js}, .tmp/probe_aid121.py, .tmp/test_aid.py",
+  "summary": "真实缺陷（契约过窄）：两个已定案单元在 promote 时被 governance 以 invalid aid 拒绝，实测上游 album_info('121') 与 ('579') 均 ok=True 且标题与目录名逐字一致，即二者是真实专辑；根因是 AID_RE 的 4–7 位下限，而 import_scan 早已在注释里承认存在 3 位车号（187_cover.jpg、187/1/）。修复：新建 jmlib/aid.py 把「是不是一个 Aid（identity）」与「自由文本里有没有 Aid（弱证据）」二分——AID_RE 改为 1–7 位（^[1-9][0-9]{0,6}$，保留锚点因为调用方也用 match）、HINT_RE 保持 >=4 位、COVER_FILE_RE 接受短号；12 个 Python 模块与 3 个 web 文件删本地定义改为共享导入（indexer.py 曾因残留本地定义把规则覆盖回窄版，由 grep 抓到），migrate.py 的遗留源布局扫描改名 LEGACY_AID_RE 并保留 4 位下限（{title}/1/ 章节目录会被误判）。20 批套件全绿：其中 5 批原断言「短号应被拒绝」，已按新契约改写为「短号合法 + 畸形（0121/12345678）仍拒绝」并各自补充一条正向用例。转正 121/579 后 jmlib index 重建，books 354 / chapters 2130 / pages 89944 与重建前一致，book 121 存活（含 204 页与封面）；两书回填标签后再重建，WITH_TAGS 180 -> 182 且标签仍在（侧车路径同样受覆盖）。",
+  "verifier": "python .tmp/test_aid.py + python .tmp/run_promote.py --aids 121,579 + python -m jmlib index",
+  "sliceId": "short-aid-contract",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

@@ -1,0 +1,12 @@
+# 默认所有文件由维护者评审
+*                       @H-60656
+
+# 治理与安全相关改动必须由维护者复核：这是唯一能改「破坏性动作」的地方
+/src/jmlib/governance.py        @H-60656
+/src/jmlib/store.py             @H-60656
+/src/jmlib/paths.py             @H-60656
+/src/jmlib/aid.py               @H-60656
+
+# CI 与仓库配置
+/.github/                       @H-60656
+/pyproject.toml                 @H-60656

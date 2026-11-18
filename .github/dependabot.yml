@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # Python 依赖：走 pip 生态，按依赖组划分
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"
+    groups:
+      python-dev:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "pytest"
+          - "pre-commit"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions：单独分两天，避免和依赖 PR 挤在一起
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"

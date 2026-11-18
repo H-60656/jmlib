@@ -1,0 +1,27 @@
+{
+ "schemaVersion": "aegis.schema.v0",
+ "taskId": "2026-11-17-jmlib-import-and-reader",
+ "lastCheckpointRef": "docs/aegis/work/2026-11-17-jmlib-import-and-reader/todo-checkpoint-draft.json",
+ "resumeInstruction": "D 段 owner：src/jmlib/aid.py 是 Aid 契约的唯一真相（identity 用 AID_RE 1-7 位，自由文本用 HINT_RE >=4 位）；src/jmlib/resolve.py 负责识别与补标签（不动字节）；src/jmlib/governance.py 负责转正（promote_plan/promote_apply 逐项精确 token）",
+ "knownPartialWork": [
+  "D 未识别包按名回填 Aid：resolve.py + CLI + /resolve 复核面板（契约 82/82、47/47）；补标签 180 本并写入 sidecar，rebuild 后存活",
+  "转正批次：657 条 promote 账本（656 executed + 1 rolled_back，174 个 Aid）；books 354 / chapters 2130 / pages 89944 / unresolved 205；verify_after_promote 全绿",
+  "短号契约修复：jmlib/aid.py + 12 模块 + 3 web 文件；20 批套件全绿；121/579 转正后 jmlib index 重建存活",
+  "复核批次：id_resolution 全部处置（pending 0 / chosen 260 / skipped 2）；86 单元 203 zip 转正；books 439 / chapters 2333 / pages 99824 / unresolved 2（2 个刻意保留的重复投稿包）；verify + rebuild 全绿",
+  "标签回填：WITH_TAGS 182 -> 429（247 本写入侧车，10 本上游已下架无法补）；重建后仍在"
+ ],
+ "mustReadBeforeContinuing": [
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/10-intent.md",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/20-checkpoint.md",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/todo-checkpoint-draft.json"
+ ],
+ "unsafeToAssume": [
+  "不要假设 .venv 能干活：E:\\github\\jmcomic\\jmlib\\.venv 的 site-packages 是空的（无 fastapi、无 jmcomic、无 pip），只能跑纯 stdlib；需要 fastapi/jmcomic 的脚本要用全局 C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "不要以为改了 aid.py 就全局生效：任何模块里残留的本地 AID_RE 定义会静默覆盖导入（indexer.py 曾如此），改完必须 grep AID_RE= 并用 .tmp/test_aid.py 的 identity 断言兜底",
+  "不要假设可以批量 promote：governance 每次只接受一个精确 token，且旧 zip 未继承沙箱授权，受限服务下 os.rename 会 WinError 5",
+  "不要相信「短号一定是错判」：121/579 经上游 album_info 证实是真实专辑，3 位车号确实存在",
+  "不要以为复核表里的建议等于已核对：工作表只给证据与建议，真正的写入者是 .tmp/adopt_suggestions.py（--apply 才写），转正是另一步 governance 逐项 token；留在 _unidentified 的 2 个包是判为重复投稿的刻意保留，不是漏转",
+  "不要用 album.page_count 数上游页数（恒为 0）：要走 client.get_album_detail(aid).episode_list 的 ep[0] 作 photo id，再 get_photo_detail(photo_id) 取 len(page_arr)；episode_list 元素是 (photo_id, index, title) 元组",
+  "不要以为「补标签失败」都是脚本问题：其中一部分是上游专辑已被下架（MissingAlbumPhotoException），本地有包但上游无专辑，标签永远补不上，不要反复重试也不要当作转正错误"
+ ]
+}

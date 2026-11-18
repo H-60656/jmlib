@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "a-b-import-suite",
+  "type": "test-run",
+  "source": ".tmp/run_a_suite.py",
+  "summary": "A1-A6 + B1/B2 + B3 + B4 离线契约全绿：A1 77/A2 54/A3 all/A4/A5/A6/B1/B3 32/B4 43 checks，覆盖扫描分类、上游候选打分与失败分类、裁决持久化、导入面板、批量入库、手工添加、元数据编辑、合集",
+  "verifier": "python .tmp/run_a_suite.py",
+  "sliceId": "a-b-import-suite",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

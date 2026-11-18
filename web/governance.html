@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jmlib · 受控治理</title>
+<style>
+  :root { color-scheme: dark; --bg:#12151b; --panel:#1b202a; --line:#2c3442;
+          --text:#e8ecf3; --muted:#98a4b6; --accent:#6ea8fe; --danger:#ff8585;
+          --ok:#7fd1a4; --warn:#ffc978; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:10px;
+           align-items:center; padding:12px 18px; background:rgba(18,21,27,.95);
+           border-bottom:1px solid var(--line); backdrop-filter:blur(6px); }
+  h1 { font-size:17px; margin:0 12px 0 0; white-space:nowrap; }
+  a.back { color:var(--accent); text-decoration:none; padding:8px 10px;
+           border:1px solid var(--line); border-radius:8px; }
+  a.back:hover { border-color:var(--accent); }
+  button, input, select { font:inherit; }
+  button { padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+           background:var(--panel); color:var(--text); cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.primary { border-color:var(--accent); }
+  button.danger-ghost { color:var(--warn); }
+  input { padding:8px 10px; border-radius:8px; border:1px solid var(--line);
+          background:#151a23; color:var(--text); width:100%; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  #status { padding:10px 18px; color:var(--muted); font-size:13px; }
+  #status.error { color:var(--danger); }
+  #status.ok { color:var(--ok); }
+  main { padding:0 18px 48px; display:grid; gap:14px; }
+  .notice { padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+            background:var(--panel); color:var(--muted); font-size:13px; }
+  .summary { display:flex; flex-wrap:wrap; gap:10px; }
+  .chip { padding:4px 10px; border:1px solid var(--line); border-radius:20px; font-size:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card h2 { font-size:15px; margin:0 0 8px; }
+  .card p.desc { color:var(--muted); font-size:12px; margin:0 0 12px; }
+  .form { display:grid; gap:10px; max-width:640px; }
+  .form label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btnrow { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; align-items:center; }
+  .planbox { margin-top:12px; padding:12px 14px; border:1px solid var(--line);
+             border-radius:10px; background:#151a23; font-size:12px; }
+  .planbox h3 { font-size:13px; margin:0 0 8px; }
+  .planbox ul { margin:6px 0; padding-left:18px; color:var(--muted); }
+  .token { display:block; margin:8px 0; padding:8px 10px; border-radius:8px;
+           background:#0f131a; border:1px dashed var(--accent); color:var(--accent);
+           font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+  .guard-card { border:1px solid var(--line); border-radius:10px; padding:12px; background:#151a23; }
+  .guard-card .tag { font-size:11px; padding:1px 7px; border:1px solid var(--line);
+                     border-radius:5px; color:var(--warn); }
+  .guard-card h3 { font-size:13px; margin:8px 0; word-break:break-word; }
+  .guard-card p { font-size:12px; color:var(--muted); margin:6px 0; }
+  .status-line { font-size:12px; margin:6px 0; }
+  .status-line.await { color:var(--warn); }
+  .action { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 0;
+            border-bottom:1px solid var(--line); font-size:12px; }
+  .action:last-child { border-bottom:0; }
+  .action .path { color:var(--muted); word-break:break-all; }
+  .badge { font-size:11px; padding:1px 7px; border:1px solid var(--line); border-radius:5px; color:var(--muted); }
+  .badge.executed { color:var(--ok); } .badge.rolled_back { color:var(--warn); }
+  .empty { padding:24px 12px; text-align:center; color:var(--muted); }
+  dialog { border:1px solid var(--line); border-radius:12px; background:var(--panel);
+           color:var(--text); max-width:min(720px,92vw); width:100%; padding:18px; }
+  dialog::backdrop { background:rgba(0,0,0,.65); }
+  dialog h2 { font-size:16px; margin:0 40px 8px 0; word-break:break-word; }
+  .close { float:right; }
+  .guard-fields { max-height:52vh; overflow:auto; margin:10px 0; padding:10px 12px;
+                  border:1px solid var(--line); border-radius:8px; background:#151a23; font-size:12px; }
+  .guard-fields dt { color:var(--accent); margin-top:8px; }
+  .guard-fields dd { color:var(--muted); margin:2px 0 0; white-space:pre-wrap; word-break:break-word; }
+  .gate { color:var(--warn); font-size:12px; margin:10px 0; }
+  @media (max-width:520px) { header { padding:10px 12px; } main { padding:0 12px 30px; }
+                             h1 { font-size:15px; } .row2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>jmlib · 受控治理</h1>
+  <a class="back" href="/">← 返回书库</a>
+  <a class="back" href="/health">存储体检 ↗</a>
+  <button id="refresh" type="button" aria-label="重新载入治理状态">刷新状态</button>
+</header>
+<div id="status" role="status" aria-live="polite">正在载入治理状态…</div>
+<main id="main" aria-busy="true"></main>
+
+<dialog id="guard" aria-label="Data Destruction Guard 与只读变更清单">
+  <button class="close" id="guard-close" type="button" aria-label="关闭">✕</button>
+  <h2 id="guard-title"></h2>
+  <div id="guard-body"></div>
+  <div class="row" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <button id="guard-exec" type="button" class="danger-ghost">尝试执行（confirmation-first 必被拒绝）</button>
+    <span class="state" id="guard-state" role="status" aria-live="polite"></span>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const main = $("main"), statusEl = $("status"), guard = $("guard");
+  let state = null, unresolved = [], currentPlan = null, currentKind = null, busy = false;
+
+  function setStatus(msg, cls = "") {
+    statusEl.textContent = msg;
+    statusEl.className = cls;
+  }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function lock(on) {
+    busy = on;
+    main.querySelectorAll("button").forEach(b => { b.disabled = on; });
+    if (!on) syncApply();
+  }
+  async function post(url, body) {
+    const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+                                body: JSON.stringify(body)});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || ("HTTP " + r.status));
+    return d;
+  }
+
+  function render() {
+    main.innerHTML = "";
+    const note = document.createElement("div");
+    note.className = "notice";
+    note.textContent = state.note;
+    main.appendChild(note);
+
+    const chips = document.createElement("div");
+    chips.className = "summary";
+    for (const p of [
+      `${state.executed} 条已执行`, `${state.rolled_back} 条已回滚`,
+      `${state.actions.length} 条治理记录`, `${state.destructive.length} 类破坏性动作（仅守卫）`,
+    ]) {
+      const c = document.createElement("span"); c.className = "chip"; c.textContent = p;
+      chips.appendChild(c);
+    }
+    main.appendChild(chips);
+
+    // --- reversible promote ---
+    const promote = document.createElement("section");
+    promote.className = "card";
+    promote.innerHTML = `
+      <h2>未识别转正（可逆转正 · 零删除）</h2>
+      <p class="desc">861 个包路径里没有可靠车号。手工指定 Aid 后，把 1 个 zip 从
+        <code>_unidentified/</code> 同卷 rename 到 <code>archive/{Aid}/{Pindex}.zip</code>，
+        并写入 1 条章节记录。任何文件都不会被删除，动作可精确回滚。</p>
+      <div class="form" id="p-form">
+        <div>
+          <label for="p-rel">未识别 zip 的相对路径（可从下拉选择或粘贴）</label>
+          <input id="p-rel" list="unresolved-list" autocomplete="off"
+                 placeholder="library/_unidentified/… .zip" aria-label="未识别 zip 相对路径">
+          <datalist id="unresolved-list"></datalist>
+        </div>
+        <div class="row2">
+          <div><label for="p-aid">车号 Aid（1–7 位数字）</label>
+               <input id="p-aid" inputmode="numeric" placeholder="例如 350123" aria-label="车号 Aid"></div>
+          <div><label for="p-index">章节号（留空自动追加）</label>
+               <input id="p-index" inputmode="numeric" placeholder="自动" aria-label="章节号"></div>
+        </div>
+        <div><label for="p-title">书名（可选，仅新建书时记录）</label>
+             <input id="p-title" placeholder="展示标题" aria-label="书名"></div>
+        <div class="btnrow">
+          <button id="p-plan" type="button" class="primary">生成变更清单（只读）</button>
+          <span class="state" id="p-msg" role="status" aria-live="polite"></span>
+        </div>
+        <div id="planbox" class="planbox" hidden></div>
+      </div>`;
+    main.appendChild(promote);
+    const dl = promote.querySelector("#unresolved-list");
+    dl.innerHTML = unresolved.map(u => `<option value="${esc(u.rel_path)}"></option>`).join("");
+    promote.querySelector("#p-plan").addEventListener("click", makePlan);
+    promote.querySelector("#p-form").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target.id !== "p-confirm") { e.preventDefault(); makePlan(); }
+    });
+    if (currentPlan) showPlan(currentPlan);
+
+    // --- destructive classes: guards only ---
+    const dest = document.createElement("section");
+    dest.className = "card";
+    dest.innerHTML = `<h2>破坏性类别 · Data Destruction Guard</h2>
+      <p class="desc">这些动作会删除或不可逆地改写唯一副本 25.3 GB。本页只有只读守卫与变更清单，
+        没有执行路径；状态恒为「awaiting scoped confirmation」，须由用户逐项显式确认。</p>
+      <div class="grid2" id="dest-grid"></div>`;
+    main.appendChild(dest);
+    const grid = dest.querySelector("#dest-grid");
+    grid.innerHTML = state.destructive.map(g => `
+      <div class="guard-card">
+        <span class="tag">${esc(g.kind)}</span>
+        <h3>${esc(g["Exact Target(s)"])}</h3>
+        <p>${esc(g["Why Irreversible"])}</p>
+        <div class="status-line await">Status：${esc(g.Status)}</div>
+        <div class="btnrow">
+          <button type="button" data-guard="${esc(g.kind)}">查看只读变更清单</button>
+        </div>
+      </div>`).join("");
+    grid.querySelectorAll("[data-guard]").forEach(b =>
+      b.addEventListener("click", () => openGuard(b.dataset.guard)));
+
+    // --- action history ---
+    const hist = document.createElement("section");
+    hist.className = "card";
+    const acts = [...state.actions].reverse();
+    hist.innerHTML = `<h2>治理动作记录</h2>` + (acts.length ? acts.map(a => `
+      <div class="action">
+        <span class="badge ${esc(a.status)}">${esc(a.status)}</span>
+        <span class="tag">#${esc(a.id)}</span>
+        <span>${esc(a.aid)}/${esc(a.pindex)}</span>
+        <span class="path">${esc(a.from)} → ${esc(a.to)}</span>
+        ${a.status === "executed" ? `<button type="button" data-rollback="${esc(a.id)}">回滚此动作</button>` : ""}
+      </div>`).join("") : `<div class="empty">暂无治理动作记录。转正后可在此逐项回滚。</div>`);
+    main.appendChild(hist);
+    hist.querySelectorAll("[data-rollback]").forEach(b =>
+      b.addEventListener("click", () => doRollback(b.dataset.rollback)));
+
+    main.setAttribute("aria-busy", "false");
+    // A reload triggered by an in-flight action must not briefly re-enable buttons.
+    if (busy) lock(true);
+  }
+
+  function showPlan(plan) {
+    const box = $("planbox");
+    box.hidden = false;
+    box.innerHTML = `
+      <h3>变更清单 · ${esc(plan.aid)}/${esc(plan.pindex)}</h3>
+      <div>${esc(plan.from)} → ${esc(plan.to)}</div>
+      <div>图片成员：${esc(plan.page_count)} 张 · 首个成员 ${esc(plan.first_member)}</div>
+      <div>${esc(plan.confirmation)}</div>
+      <ul>${plan.checks.map(c => `<li>${esc(c)}</li>`).join("")}</ul>
+      <div>确认串（精确匹配才执行）：</div>
+      <code class="token" id="p-token">${esc(plan.confirm_token)}</code>
+      <input id="p-confirm" placeholder="在此输入上方确认串" autocomplete="off" aria-label="确认串">
+      <div class="btnrow" style="margin-top:8px">
+        <button id="p-apply" type="button" class="primary" disabled>执行转正</button>
+        <button id="p-cancel" type="button">取消</button>
+        <span class="state" id="p-apply-msg" role="status" aria-live="polite"></span>
+      </div>`;
+    $("p-confirm").addEventListener("input", syncApply);
+    $("p-confirm").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !$("p-apply").disabled) { e.preventDefault(); doApply(); }
+    });
+    $("p-apply").addEventListener("click", doApply);
+    $("p-cancel").addEventListener("click", () => {
+      currentPlan = null; box.hidden = true; box.innerHTML = "";
+      $("p-msg").textContent = "已取消，未执行任何动作。";
+    });
+    syncApply();
+  }
+
+  function syncApply() {
+    const btn = $("p-apply");
+    if (!btn || !currentPlan) return;
+    btn.disabled = busy || ($("p-confirm").value.trim() !== currentPlan.confirm_token);
+  }
+
+  async function makePlan() {
+    const rel = $("p-rel").value.trim(), aid = $("p-aid").value.trim();
+    const idx = $("p-index").value.trim(), title = $("p-title").value.trim();
+    if (!rel || !aid) { $("p-msg").textContent = "请先填相对路径与车号 Aid。"; return; }
+    lock(true); $("p-msg").textContent = "正在生成只读变更清单…";
+    try {
+      const d = await post("/api/governance/promote/plan", {
+        rel_path: rel, aid: aid,
+        pindex: idx ? Number(idx) : null, title: title,
+      });
+      if (!d.ok) { $("p-msg").textContent = "清单无效：" + d.error; return; }
+      currentPlan = d.plan;
+      showPlan(currentPlan);
+      $("p-msg").textContent = "已生成清单；请输入确认串后执行。";
+    } catch (err) {
+      $("p-msg").textContent = "生成失败：" + err.message;
+    } finally { lock(false); }
+  }
+
+  async function doApply() {
+    if (!currentPlan) return;
+    lock(true); $("p-apply-msg").textContent = "正在执行（同卷 rename，零删除）…";
+    try {
+      const d = await post("/api/governance/promote/apply",
+                           {plan: currentPlan, confirm: $("p-confirm").value});
+      if (!d.ok) { $("p-apply-msg").textContent = "已拒绝：" + d.error; return; }
+      currentPlan = null;
+      await load(true, d.message);
+    } catch (err) {
+      $("p-apply-msg").textContent = "执行失败：" + err.message;
+    } finally { lock(false); }
+  }
+
+  async function doRollback(id) {
+    lock(true); setStatus("正在回滚 #" + id + "…");
+    try {
+      const d = await post("/api/governance/rollback/" + encodeURIComponent(id), {});
+      if (!d.ok) { setStatus("回滚失败：" + d.error, "error"); return; }
+      await load(true, d.message);
+    } catch (err) {
+      setStatus("回滚失败：" + err.message, "error");
+    } finally { lock(false); }
+  }
+
+  async function openGuard(kind) {
+    currentKind = kind;
+    $("guard-state").textContent = "";
+    $("guard-title").textContent = kind + " · Data Destruction Guard";
+    $("guard-body").innerHTML = `<div class="gate">正在读取只读清单…</div>`;
+    guard.showModal();
+    try {
+      const r = await fetch("/api/governance/manifest?kind=" + encodeURIComponent(kind));
+      const m = await r.json();
+      const g = m.guard || {};
+      $("guard-body").innerHTML = `
+        <div class="gate">⚠ ${esc(g.Status)} — ${esc(g["Confirmation Required"] || "")}。
+          本工具没有执行路径，所有删除 / zip 成员改写 / 整批回滚均被列为 Blocked。</div>
+        <dl class="guard-fields">
+          <dt>Target Class</dt><dd>${esc(g["Target Class"])}</dd>
+          <dt>Exact Target(s)</dt><dd>${esc(g["Exact Target(s)"])}</dd>
+          <dt>Environment</dt><dd>${esc(g.Environment)}</dd>
+          <dt>Why Irreversible</dt><dd>${esc(g["Why Irreversible"])}</dd>
+          <dt>Backup / Rollback Note</dt><dd>${esc(g["Backup / Rollback Note"])}</dd>
+          <dt>Allowed Read-Only Next Steps</dt><dd>${esc((g["Allowed Read-Only Next Steps"]||[]).join("\n"))}</dd>
+          <dt>Blocked Destructive Steps</dt><dd>${esc((g["Blocked Destructive Steps"]||[]).join("\n"))}</dd>
+        </dl>
+        <div class="planbox"><h3>只读变更清单（total ${esc(m.total)}，${esc(m.total_bytes)} bytes）</h3>
+          <ul>${(m.items||[]).slice(0,40).map(i => `<li>${esc(i.target)} · ${esc(i.unit)} · ${esc(i.size)}</li>`).join("") || "<li>（无条目）</li>"}</ul>
+          ${m.error ? `<div class="gate">${esc(m.error)}</div>` : ""}
+          ${m.note ? `<div>${esc(m.note)}</div>` : ""}
+        </div>`;
+    } catch (err) {
+      $("guard-body").innerHTML = `<div class="gate">读取失败：${esc(err.message)}（可关闭重试）</div>`;
+    }
+  }
+
+  async function tryExecute() {
+    if (!currentKind) return;
+    $("guard-state").textContent = "正在提交（预期被拒绝）…";
+    $("guard-exec").disabled = true;
+    try {
+      const d = await post("/api/governance/destructive",
+                           {kind: currentKind, target: "", detail: "UI 演示"});
+      $("guard-state").textContent = d.ok
+        ? "意外：不应出现执行成功" : "已拒绝（confirmation-first，无执行路径）";
+    } catch (err) {
+      $("guard-state").textContent = "已拒绝：" + err.message;
+    } finally { $("guard-exec").disabled = false; }
+  }
+
+  function loadFailed(msg) {
+    main.innerHTML = `<div class="empty">治理状态载入失败：${esc(msg)}<br>
+      <button id="retry" type="button">重试</button></div>`;
+    main.setAttribute("aria-busy", "false");
+    $("retry").addEventListener("click", () => load(true));
+    setStatus("治理状态载入失败：" + msg, "error");
+  }
+
+  async function load(isRetry = false, successMessage = "") {
+    main.setAttribute("aria-busy", "true");
+    setStatus(isRetry ? "正在重新载入…" : "正在载入治理状态…");
+    try {
+      const [sr, ur] = await Promise.all([
+        fetch("/api/governance"), fetch("/api/unresolved"),
+      ]);
+      if (!sr.ok) throw new Error("治理状态 HTTP " + sr.status);
+      if (!ur.ok) throw new Error("未识别清单 HTTP " + ur.status);
+      state = await sr.json();
+      unresolved = (await ur.json()).items;
+      render();
+      // Keep an action's success message visible after the refresh; otherwise
+      // the generic "loaded" line would clobber the only feedback the user got.
+      setStatus(successMessage || "治理状态已载入 · 只读面板，破坏性动作未获逐项确认不会执行。", "ok");
+    } catch (err) {
+      loadFailed(err.message);
+    }
+  }
+
+  $("refresh").addEventListener("click", () => { currentPlan = null; load(true); });
+  $("guard-close").addEventListener("click", () => guard.close());
+  guard.addEventListener("click", (e) => { if (e.target === guard) guard.close(); });
+  $("guard-exec").addEventListener("click", tryExecute);
+  load();
+})();
+</script>
+</body>
+</html>

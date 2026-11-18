@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-11-10-jmlib-resource-library",
+  "lastCheckpointRef": "docs/aegis/work/2026-11-10-jmlib-resource-library/todo-checkpoint-draft.json",
+  "resumeInstruction": "任务已完成。若重启，先核对 store.stats() 应为 books=185 chapters=1474 unresolved=861，governance.status() 应为 executed=0 rolled_back=0 actions=0，ledger 不存在；不要再执行 P5 破坏性清理。",
+  "knownPartialWork": [
+    "P0–P5 全部分期完成；P4 浏览器复核；P5 受控治理端到端复核；最终全量回归；测试痕迹清理"
+  ],
+  "mustReadBeforeContinuing": [
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/10-intent.md",
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/20-checkpoint.md",
+    "docs/aegis/work/2026-11-10-jmlib-resource-library/todo-checkpoint-draft.json"
+  ],
+  "unsafeToAssume": [
+    "不要删除 library/_incoming 空目录骨架；不要把 861 unresolved 当书；不要用 metadata.sqlite 作元数据源；不要打印 option.yml 注释凭据；不要在受限服务下期待旧 zip 可直接 rename。"
+  ]
+}

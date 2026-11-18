@@ -1,0 +1,45 @@
+# 提交前自动检查。安装：pre-commit install
+# 全部 hook 与 CI（.github/workflows/lint.yml）保持一致。
+default_language_version:
+  python: python3.10
+
+ci:
+  autoupdate_schedule: weekly
+  skip: [mypy]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^docs/aegis/
+      - id: end-of-file-fixer
+        exclude: ^docs/aegis/
+      - id: check-yaml
+      - id: check-json
+        exclude: ^docs/aegis/
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: \.(bat|cmd|ps1)$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      # 先跑 linter 的自动修复，再跑格式化，顺序不能反
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.19.0
+    hooks:
+      - id: mypy
+        args: [--python-version=3.10]
+        additional_dependencies: []
+        files: ^src/

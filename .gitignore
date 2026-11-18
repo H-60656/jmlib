@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# jmlib
+#
+# 本项目的真实数据（几十 GB 归档 + SQLite 索引 + 封面缓存）**永不入库**。
+# 仓库只包含代码、网页、测试与文档；clone 下来是一个空书架。
+# ---------------------------------------------------------------------------
+
+# --- 本地数据（真相，绝不可提交） -------------------------------------------
+/library/
+/data/
+/exports/
+*.db
+*.db-journal
+*.db-wal
+
+# --- 运行产物 -----------------------------------------------------------------
+*.log
+logs/
+*.csv
+*.tsv
+
+# --- Python -------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- 虚拟环境 -----------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+.uv-cache/
+
+# --- 测试与检查工具缓存 --------------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.hypothesis/
+
+# --- 临时脚本（契约探针、一次性排查脚本） --------------------------------------
+.tmp/
+tmp/
+scratch/
+# pytest 在受限环境里会把临时根回落到 CWD
+pytest-of-*/
+.pytest_tmp/
+
+# --- 编辑器 / 操作系统 ---------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- 本地配置与密钥 ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.jmlib-local*
+
+# --- 其他 ---------------------------------------------------------------------
+*.orig
+*.rej

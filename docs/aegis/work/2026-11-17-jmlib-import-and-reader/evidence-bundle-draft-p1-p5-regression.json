@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p1-p5-regression",
+  "type": "test-run",
+  "source": ".tmp/test_p*_api.py + .tmp/test_p4_ingest.py + .tmp/test_p5_governance.py + tests/test_migrate.py",
+  "summary": "P1 18/P2 29/P3 40/P4 ALL/P5 ALL/migrate 3 全绿；schemaVersion jmlib.db.v5；真实库 185 本/1474 章/memory 1/861 未识别/61199 页",
+  "verifier": "python .tmp/test_p1_api.py ...",
+  "sliceId": "p1-p5-regression",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

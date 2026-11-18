@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（请勿公开）
+    url: https://github.com/H-60656/jmlib/security/advisories/new
+    about: 路径穿越、治理绕过、局域网裸奔等安全缺陷，请走私密漏洞报告。
+  - name: 使用与设计问题
+    url: https://github.com/H-60656/jmlib/blob/master/README.md
+    about: 先读 README 与 CONTRIBUTING，里面写了硬性约束与常见用法。

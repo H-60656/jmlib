@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "browser-c4-and-c3",
+  "type": "manual-check",
+  "source": "pilot_* 真实浏览器",
+  "summary": "C.4 排序五档/空结果说明/收藏空结果/标签书架空状态；C.3 连续滚动：首屏加载、跳页状态行、超时重试、恢复位置 155 精确、模式切换保位、章边界",
+  "verifier": "真实浏览器 pilot_open/pilot_eval",
+  "sliceId": "browser-c4-and-c3",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

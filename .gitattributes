@@ -1,0 +1,17 @@
+# 统一换行与文本判定，避免 Windows 上 autocrlf 与 pre-commit 的 lf 规则打架。
+* text=auto eol=lf
+
+# 二进制：不参与文本转换与 diff
+*.zip   binary
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.db    binary
+
+# Windows 脚本保留 CRLF
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jmlib · 未识别复核</title>
+<style>
+:root{
+  --bg:#12151b; --panel:#1b202a; --line:#2c3442; --text:#e8ecf3; --muted:#98a4b6;
+  --accent:#6ea8fe; --danger:#ff8585; --ok:#7fd1a4; --info:#8fb6ff; --warn:#ffc978;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.55 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;
+  align-items:center;padding:10px 14px;background:rgba(18,21,27,.94);
+  border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+header .brand{font-weight:600;margin-right:auto}
+a.nav,button{font:inherit;color:var(--text);background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer;text-decoration:none}
+button:disabled{opacity:.45;cursor:not-allowed}
+a.nav:hover,button:hover:not(:disabled){border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#status{padding:8px 14px;color:var(--muted);border-bottom:1px solid var(--line)}
+#status.error{color:var(--danger)}
+#status.ok{color:var(--ok)}
+main{padding:14px;display:flex;flex-direction:column;gap:12px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters input{flex:1 1 200px;min-width:160px;font:inherit;color:var(--text);
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.summary{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:3px 10px;font-size:12px;color:var(--muted)}
+.chip b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;position:sticky;top:41px;background:var(--bg)}
+tr:hover td{background:#171c25}
+.name{max-width:340px;word-break:break-word}
+.aid{font-family:ui-monospace,Consolas,monospace}
+.state{font-size:12px;border-radius:999px;padding:1px 8px;border:1px solid var(--line)}
+.state[data-s="chosen"]{color:var(--ok);border-color:var(--ok)}
+.state[data-s="pending"]{color:var(--warn);border-color:var(--warn)}
+.state[data-s="skipped"]{color:var(--muted)}
+.state[data-s="unresolved"]{color:var(--info);border-color:var(--info)}
+.rowacts{display:flex;gap:6px;flex-wrap:wrap}
+.rowacts button{padding:3px 8px;font-size:12px}
+.cands{color:var(--muted);font-size:12px;margin-top:2px}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.note{color:var(--muted);font-size:12px}
+@media (max-width:640px){
+  th{position:static}
+  .name{max-width:none}
+  table,thead,tbody,th,td,tr{display:block}
+  thead{display:none}
+  tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:8px}
+  td{border:0;padding:3px 0}
+  td::before{content:attr(data-k) "：";color:var(--muted)}
+}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">未识别复核</span>
+  <a class="nav" href="/">← 返回书库</a>
+  <a class="nav" href="/import">导入 ↗</a>
+  <a class="nav" href="/health">存储体检 ↗</a>
+  <a class="nav" href="/governance">受控治理 ↗</a>
+  <button id="refresh" type="button" aria-label="重新载入裁决记录">刷新</button>
+</header>
+<div id="status" role="status" aria-live="polite">正在载入裁决记录…</div>
+<main id="main" aria-busy="true"></main>
+
+<script src="/assets/resolve.js" defer></script>
+</body>
+</html>

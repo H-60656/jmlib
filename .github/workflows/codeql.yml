@@ -1,0 +1,46 @@
+name: codeql
+
+# Code scanning 需要仓库为 public，或 private 仓库已启用 GitHub Advanced Security。
+# 未满足时 job 会被跳过（而不是失败），等仓库公开或开通 GHAS 后自动生效。
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (python)
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"

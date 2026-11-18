@@ -1,0 +1,16 @@
+{
+ "schemaVersion": "aegis.schema.v0",
+ "taskId": "2026-11-17-jmlib-import-and-reader",
+ "taskIntentRef": "docs/aegis/work/2026-11-17-jmlib-import-and-reader/task-intent-draft.json",
+ "baselineRefs": [],
+ "scopeStatus": "verified: A.1-A.6/B.1-B.4/C.1-C.4/D 全部批次已实施；D 段累计 860 条 promote 动作（本批 86 单元 203 zip + 早批 654 zip），逐包对账；20 批套件（含新增 aid 契约）全绿",
+ "compatStatus": "verified: 真实库 439 本/2333 章/99824 页与磁盘 2333 包一一对应（零删除，zip 总数 2335 不变），id_resolution pending 0 / chosen 260 / skipped 2，_unidentified 仅剩 2 个已判重复投稿的包且 unresolved 行与磁盘一致；book 主键与 library/archive 字节真相未改；源目录零改动；option.yml 只读",
+ "retirementStatus": "not-applicable: 本段不退役任何路径；旧手工脚本、download_cover、旧 dir_rule、jm-view-server 仍保留（退役 trigger 未触发）",
+ "newRiskSignals": [
+  "2 个重复投稿包留在 _unidentified（121 与 533565 的同内容另一次上传）：不进入书库是刻意的，要换版本需先 rollback 再 promote",
+  "クール系店员取 1192982 而非 1193191（同一作品两次上传，标题/作者/55 页/中文无修正全同），仅凭元数据无法再区分",
+  "idres 中已转正单元仍保留 chosen 行（历史记录，复核页只列仍在 _unidentified 的单元，不构成待办）",
+  "10 本上游已下架专辑无标签（3748111、3748011、1439474、1436338、1435295、1433139、1427743、1237529、1237128、1237099）：影不影响阅读，但库里这批书会缺作者/标签筛选能力"
+ ],
+ "decision": "continue"
+}

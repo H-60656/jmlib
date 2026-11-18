@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p4-browser-verify",
+  "type": "browser-verification",
+  "source": "pilot_open / and /read and /health on P4 code",
+  "summary": "P4 后浏览器封面墙 185 本、5 章 1443022 可阅读并记记忆点、体检面板显示 P4 已入库；测试记忆点已清理。",
+  "verifier": "pilot + Python state check",
+  "sliceId": "p4",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-12"
+}

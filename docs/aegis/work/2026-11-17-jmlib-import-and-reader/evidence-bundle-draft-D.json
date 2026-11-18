@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "d-resolve-and-tags",
+  "type": "test-run",
+  "source": ".tmp/test_resolve_d.py, .tmp/test_resolve_api.py, .tmp/run_a_suite.py",
+  "summary": "D 段离线契约全绿：D 82 checks（分组/文件名 Aid 捷径/纯数字名不当 query/分数与 margin 闸门/标签回填写库+sidecar/rebuild 后存活）+ D-review 47 checks（复核面板只读、不调上游、决定落库、清除保留证据、PIN）；15 批套件 SUITE_OK",
+  "verifier": "python .tmp/run_a_suite.py",
+  "sliceId": "D",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

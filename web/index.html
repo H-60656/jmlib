@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jmlib · 本地资源库</title>
+<style>
+  :root { color-scheme: dark; --bg:#12151b; --panel:#1b202a; --line:#2c3442;
+          --text:#e8ecf3; --muted:#98a4b6; --accent:#6ea8fe; --danger:#ff8585; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:10px;
+           align-items:center; padding:12px 18px; background:rgba(18,21,27,.95);
+           border-bottom:1px solid var(--line); backdrop-filter:blur(6px); }
+  h1 { font-size:17px; margin:0 12px 0 0; white-space:nowrap; }
+  #q { flex:1 1 260px; min-width:180px; padding:9px 12px; border-radius:8px;
+       border:1px solid var(--line); background:var(--panel); color:var(--text); }
+  #q:focus-visible, button:focus-visible, select:focus-visible, a:focus-visible {
+       outline:2px solid var(--accent); outline-offset:2px; }
+  select, button { padding:9px 12px; border-radius:8px; border:1px solid var(--line);
+                   background:var(--panel); color:var(--text); cursor:pointer; }
+  button:hover, select:hover, a.nav:hover { border-color:var(--accent); }
+  a.nav { padding:9px 12px; border-radius:8px; border:1px solid var(--line);
+          background:var(--panel); color:var(--text); text-decoration:none; white-space:nowrap; }
+  #status { padding:10px 18px; color:var(--muted); font-size:13px; }
+  #status.error { color:var(--danger); }
+  main { padding:0 18px 40px; }
+  .grid { display:grid; gap:14px;
+          grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+          overflow:hidden; display:flex; flex-direction:column; }
+  .card a { color:inherit; text-decoration:none; }
+  .cover { aspect-ratio:3/4; background:#0d1016; display:flex; align-items:center;
+           justify-content:center; color:var(--muted); font-size:12px; text-align:center;
+           padding:8px; overflow:hidden; }
+  .cover img { width:100%; height:100%; object-fit:cover; display:block; }
+  .meta { padding:9px 10px 11px; }
+  .aid { color:var(--accent); font-variant-numeric:tabular-nums; font-size:12px; }
+  .title { font-size:13px; line-height:1.35; margin-top:3px;
+           display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+           overflow:hidden; word-break:break-word; }
+  .sub { color:var(--muted); font-size:11px; margin-top:5px; }
+  .badge { display:inline-block; margin-top:6px; padding:1px 6px; border-radius:5px;
+           font-size:11px; border:1px solid var(--line); color:var(--muted); }
+  .empty { padding:48px 12px; text-align:center; color:var(--muted); }
+  dialog { border:1px solid var(--line); border-radius:12px; background:var(--panel);
+           color:var(--text); max-width:min(720px,92vw); width:100%; padding:18px; }
+  dialog::backdrop { background:rgba(0,0,0,.65); }
+  .chapters { display:grid; gap:8px; margin-top:12px; }
+  .chapter { display:flex; justify-content:space-between; gap:10px; padding:9px 11px;
+             border:1px solid var(--line); border-radius:8px; color:inherit;
+             text-decoration:none; }
+  a.chapter:hover { border-color:var(--accent); }
+  #d-resume { padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+              background:var(--panel); color:var(--text); cursor:pointer; }
+  #d-resume:hover { border-color:var(--accent); }
+  .editrow { display:grid; grid-template-columns:110px 1fr; gap:8px; align-items:center;
+             margin-top:6px; }
+  .editrow label { color:var(--muted); font-size:12px; }
+  .editrow input { padding:6px 8px; border-radius:6px; border:1px solid var(--line);
+                   background:var(--bg); color:var(--text); }
+  .editrow button { padding:6px 10px; border-radius:6px; border:1px solid var(--line);
+                    background:var(--panel); color:var(--text); cursor:pointer; justify-self:start; }
+  .editrow button:hover { border-color:var(--accent); }
+  .editrow button:disabled { opacity:.5; cursor:default; }
+  details > summary { cursor:pointer; color:var(--accent); font-size:13px; }
+  .close { float:right; }
+  @media (max-width:480px) { header { padding:10px 12px; } main { padding:0 12px 30px; }
+                             .grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>jmlib · 资源库</h1>
+  <label for="q" class="sr-only" style="position:absolute;left:-9999px">搜索标题或车号</label>
+  <input id="q" type="search" placeholder="搜索标题或车号…" autocomplete="off" aria-label="搜索标题或车号">
+  <select id="tag" aria-label="标签筛选"><option value="">全部标签</option></select>
+  <select id="shelf" aria-label="书架筛选"><option value="">全部书架</option></select>
+  <select id="sort" aria-label="排序方式">
+    <option value="aid">按车号</option>
+    <option value="recent">最近读过</option>
+    <option value="title">按标题</option>
+    <option value="chapters">章节数多</option>
+    <option value="pages">页数多</option>
+  </select>
+  <button id="fav-btn" type="button" aria-pressed="false" aria-label="只看收藏">★ 收藏</button>
+  <button id="coll-btn" type="button" aria-label="打开合集面板">合集</button>
+  <button id="unresolved-btn" type="button" aria-label="查看未识别清单">未识别</button>
+  <a class="nav" href="/resolve" aria-label="打开未识别复核面板">未识别复核</a>
+  <a class="nav" href="/health" aria-label="打开存储体检面板">存储体检</a>
+  <a class="nav" href="/governance" aria-label="打开受控治理面板">受控治理</a>
+</header>
+<div id="status" role="status" aria-live="polite">正在载入书库…</div>
+<main><div id="grid" class="grid" aria-busy="true"></div><div id="empty" class="empty" hidden></div></main>
+
+<dialog id="shelf-dialog" aria-label="合集与阅读列表">
+  <button class="close" id="coll-close" type="button" aria-label="关闭合集面板">✕</button>
+  <h2 style="margin:0 40px 4px 0;font-size:16px">合集与阅读列表</h2>
+  <p class="hint" style="margin:4px 0 10px">一个合集是给书起的清单，可以放很多本；删合集只删清单，不删书。</p>
+  <div class="editrow"><label for="coll-name">新合集名</label>
+    <input id="coll-name" type="text" placeholder="例如：夏日推荐"></div>
+  <div class="editrow"><span></span><button id="coll-create" type="button">新建合集</button></div>
+  <div id="coll-msg" class="hint" role="status" aria-live="polite"></div>
+  <div id="coll-list" class="chapters" style="margin-top:10px"></div>
+</dialog>
+
+<dialog id="detail" aria-label="书本详情">
+  <button class="close" id="detail-close" type="button" aria-label="关闭详情">✕</button>
+  <h2 id="detail-title" style="margin:0 40px 4px 0;font-size:16px"></h2>
+  <div id="detail-sub" class="sub"></div>
+  <div id="detail-body" class="chapters"></div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const grid = $("grid"), statusEl = $("status"), emptyEl = $("empty");
+  const q = $("q"), tag = $("tag"), detail = $("detail");
+  const shelf = $("shelf"), sortSel = $("sort"), favBtn = $("fav-btn"), shelfDialog = $("shelf-dialog");
+  let timer = null, controller = null, loadedTags = false, loadedShelves = false, onlyFav = false;
+  let lastEmptyHint = "";
+
+  function setStatus(msg, isError = false) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("error", isError);
+  }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  async function loadTags() {
+    if (loadedTags) return;
+    try {
+      const r = await fetch("/api/library");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      const current = tag.value;
+      for (const t of d.tags) {
+        const opt = document.createElement("option");
+        opt.value = t; opt.textContent = t; tag.appendChild(opt);
+      }
+      // An empty dropdown is not the same as "no tags exist": say which one it is
+      // so the control does not look broken when nothing has been tagged yet.
+      if (!d.tags.length) {
+        tag.options[0].textContent = "全部标签（暂无）";
+        tag.title = "还没有任何标签：标签来自下载/导入时抓到的元数据，目前书架里一本都没有。";
+      }
+      tag.value = current;
+      loadedTags = true;
+    } catch (e) { /* tag filter stays in its disabled-but-honest state */ }
+  }
+  function render(items, total, partial, stats, emptyHint) {
+    grid.innerHTML = "";
+    grid.setAttribute("aria-busy", "false");
+    const bits = [`共 ${total} 本 · ${stats.books} 本已入库 · ${stats.chapters} 章节 · ${stats.unresolved} 未识别`];
+    if (partial) bits.push(`${partial} 本信息不全（缺封面或标题），已显示占位`);
+    setStatus(bits.join(" · "));
+    if (!items.length) {
+      // The server knows which filters are on; guessing here made a shelf filter
+      // look like an empty library and told the user to change the search box.
+      lastEmptyHint = emptyHint || "";
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = `<div>${esc(lastEmptyHint || "没有匹配的书。")}</div>` +
+        (lastEmptyHint && lastEmptyHint.indexOf("还没有书") < 0
+          ? `<div style="margin-top:8px"><button id="clear-filters" type="button">清掉筛选</button></div>` : "");
+      const clear = $("clear-filters");
+      if (clear) clear.addEventListener("click", () => {
+        q.value = ""; tag.value = ""; shelf.value = ""; onlyFav = false;
+        favBtn.setAttribute("aria-pressed", "false");
+        favBtn.textContent = "★ 收藏";
+        load();
+      });
+      return;
+    }
+    lastEmptyHint = "";
+    emptyEl.hidden = true;
+    const frag = document.createDocumentFragment();
+    for (const b of items) {
+      const card = document.createElement("article");
+      card.className = "card";
+      const name = b.display_title || b.title || "";
+      const cover = b.cover_url
+        ? `<img loading="lazy" src="${esc(b.cover_url)}" alt="${esc(name || b.aid)} 的封面">`
+        : `<div class="cover">封面缺失</div>`;
+      const missing = !name ? `<span class="badge">标题待补</span>` : "";
+      const fav = b.favorite ? `<span class="badge">★ 收藏</span>` : "";
+      const resume = b.resume_pindex != null
+        ? `<span class="badge">续读 ${b.resume_pindex} / ${b.resume_image}</span>` : "";
+      const coverHtml = b.cover_url ? `<div class="cover">${cover}</div>` : cover;
+      card.innerHTML = `<a href="#" data-aid="${esc(b.aid)}" aria-label="打开 ${esc(name || b.aid)} 的章节">
+          ${coverHtml}
+          <div class="meta"><div class="aid">#${esc(b.aid)}</div>
+          <div class="title" title="${esc(name || "（标题待补）")}">${esc(name || "（标题待补）")}</div>
+          <div class="sub">${b.chapter_count} 章 · ${b.page_total} 页 · ${esc(b.generation || "")}</div>
+          ${missing}${fav}${resume}</div></a>`;
+      frag.appendChild(card);
+    }
+    grid.appendChild(frag);
+  }
+  async function loadShelves(shelves) {
+    const current = shelf.value;
+    const names = shelves || [];
+    // Rebuild the option list from the server's own distinct set, so a shelf
+    // that no longer exists stops being offered instead of filtering to zero.
+    shelf.innerHTML = '<option value="">全部书架</option>';
+    for (const s of names) {
+      const opt = document.createElement("option");
+      opt.value = s; opt.textContent = s; shelf.appendChild(opt);
+    }
+    shelf.value = names.indexOf(current) >= 0 ? current : "";
+    if (!names.length) {
+      shelf.options[0].textContent = "全部书架（暂无）";
+      shelf.title = "还没有书架：在书的详情里填一个「书架」就会出现在这里。";
+    } else {
+      shelf.options[0].textContent = "全部书架";
+      shelf.title = "";
+    }
+  }
+  async function load() {
+    if (controller) controller.abort();
+    controller = new AbortController();
+    grid.setAttribute("aria-busy", "true");
+    setStatus("正在载入书库…");
+    const params = new URLSearchParams();
+    if (q.value.trim()) params.set("q", q.value.trim());
+    if (tag.value) params.set("tag", tag.value);
+    if (shelf.value) params.set("collection", shelf.value);
+    if (onlyFav) params.set("favorite", "true");
+    if (sortSel.value) params.set("sort", sortSel.value);
+    try {
+      const r = await fetch("/api/library?" + params.toString(), {signal: controller.signal});
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
+      const d = await r.json();
+      render(d.items, d.total, d.partial, d.stats, d.empty_hint);
+      await loadShelves(d.shelves);
+      await loadTags();
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      grid.innerHTML = "";
+      grid.setAttribute("aria-busy", "false");
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = `书库载入失败：${esc(e.message)}<br><button id="retry" type="button">重试</button>`;
+      $("retry").addEventListener("click", load);
+      setStatus("载入失败，可点击重试。", true);
+    }
+  }
+  function schedule() { clearTimeout(timer); timer = setTimeout(load, 250); }
+  q.addEventListener("input", schedule);
+  tag.addEventListener("change", load);
+  shelf.addEventListener("change", load);
+  sortSel.addEventListener("change", load);
+  favBtn.addEventListener("click", () => {
+    onlyFav = !onlyFav;
+    favBtn.setAttribute("aria-pressed", onlyFav ? "true" : "false");
+    favBtn.textContent = onlyFav ? "★ 只看收藏" : "★ 收藏";
+    load();
+  });
+  q.addEventListener("keydown", (e) => { if (e.key === "Escape") { q.value = ""; load(); } });
+
+  grid.addEventListener("click", async (e) => {
+    const link = e.target.closest("a[data-aid]");
+    if (!link) return;
+    e.preventDefault();
+    const aid = link.dataset.aid;
+    $("detail-title").textContent = "载入中…";
+    $("detail-sub").textContent = "";
+    $("detail-body").innerHTML = "";
+    detail.showModal();
+    try {
+      const r = await fetch("/api/books/" + encodeURIComponent(aid));
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const b = await r.json();
+      $("detail-title").textContent = b.display_title || b.title || "（标题待补）";
+      $("detail-sub").textContent = `#${b.aid} · ${b.chapters.length} 章 · ${b.generation || ""}`;
+      const m = b.memory;
+      const base = `/read?aid=${encodeURIComponent(b.aid)}`;
+      const firstP = b.chapters.length ? b.chapters[0].pindex : 1;
+      const resume = m ? `<button id="d-resume" type="button" style="margin-top:10px" data-href="${esc(base)}">从记忆点续读（第 ${m.pindex} 章 · 第 ${m.image_index} 页）</button>` : "";
+      const editor = `<details style="margin-top:12px"><summary>改这本书的信息</summary>
+          <div class="editrow"><label for="d-local">我的标题</label>
+            <input id="d-local" type="text" value="${esc(b.local_title || "")}" placeholder="${esc(b.title || "（用文件夹名）")}"></div>
+          <div class="editrow"><label for="d-aliases">别名（逗号分隔）</label>
+            <input id="d-aliases" type="text" value="${esc((b.aliases || []).join(", "))}"></div>
+          <div class="editrow"><label for="d-collection">书架</label>
+            <input id="d-collection" type="text" value="${esc(b.collection || "")}" placeholder="一本书只在一个书架上"></div>
+          <div class="editrow"><label for="d-addcoll">加入合集</label>
+            <select id="d-addcoll"><option value="">（不加入）</option></select></div>
+          <div class="editrow"><span></span>
+            <button id="d-addcoll-go" type="button">加入所选合集</button></div>
+          <div id="d-coll-msg" class="hint" role="status" aria-live="polite"></div>
+          <div class="editrow"><label>收藏</label>
+            <button id="d-fav" type="button">${b.favorite ? "★ 已收藏，点此取消" : "☆ 收藏"}</button></div>
+          <div class="editrow"><span></span>
+            <button id="d-save" type="button">保存</button></div>
+          <div id="d-msg" class="hint" role="status" aria-live="polite"></div>
+        </details>`;
+      $("detail-body").innerHTML = resume + editor +
+        `<div class="chapters" style="margin-top:10px">` +
+        (b.chapters.length
+          ? b.chapters.map(c => {
+              const at = m && m.pindex === c.pindex ? `&i=${m.image_index}` : "";
+              return `<a class="chapter" href="${base}&p=${c.pindex}${at}" aria-label="从第 ${c.pindex} 章开始阅读">
+                  <span>第 ${c.pindex} 章${m && m.pindex === c.pindex ? " · 上次读到第 " + m.image_index + " 页" : ""}</span>
+                  <span>${c.page_count} 页${c.cover_url ? "" : " · 封面缺失"} →</span></a>`;
+            }).join("")
+          : `<div class="empty">没有章节记录。</div>`) +
+        `</div>` +
+        `<div style="margin-top:12px"><a href="${base}&p=${firstP}&i=1">从头开始阅读 →</a></div>`;
+      if ($("d-resume")) $("d-resume").addEventListener("click", () => { location.href = $("d-resume").dataset.href; });
+
+      // Named-list membership (B.4).  Filled from the server so the picker can
+      // never offer a list that was deleted in another tab.
+      try {
+        const cr = await fetch("/api/collections");
+        if (cr.ok) {
+          const cd = await cr.json();
+          const pick = $("d-addcoll");
+          for (const c of cd.items) {
+            const opt = document.createElement("option");
+            opt.value = c.id; opt.textContent = c.name + `（${c.item_count} 本）`;
+            pick.appendChild(opt);
+          }
+        }
+      } catch (e) { /* the picker stays empty; nothing is lost */ }
+      $("d-addcoll-go").addEventListener("click", async () => {
+        const cid = $("d-addcoll").value;
+        if (!cid) { $("d-coll-msg").textContent = "先选一个合集。"; return; }
+        $("d-coll-msg").textContent = "正在加入…";
+        try {
+          const ar = await fetch(`/api/collections/${cid}/items`, {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({aid: b.aid}),
+          });
+          if (!ar.ok) throw new Error("HTTP " + ar.status);
+          $("d-coll-msg").textContent = "已加入合集。";
+          loadCollections();
+        } catch (err) { $("d-coll-msg").textContent = "加入失败：" + err.message; }
+      });
+
+      // Inline metadata editor (B.3).  Sends only the fields the user changed;
+      // the server never repurposes a derived column, so a rename cannot wipe
+      // the folder title, the aliases or a favourite flag.
+      let favorite = !!b.favorite;
+      $("d-fav").addEventListener("click", async () => {
+        const want = !favorite;
+        $("d-msg").textContent = "";
+        try {
+          const fr = await fetch(`/api/books/${encodeURIComponent(b.aid)}/favorite`, {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({favorite: want}),
+          });
+          if (!fr.ok) throw new Error("HTTP " + fr.status);
+          favorite = want;
+          $("d-fav").textContent = favorite ? "★ 已收藏，点此取消" : "☆ 收藏";
+          $("d-msg").textContent = favorite ? "已加入收藏。" : "已取消收藏。";
+          load();
+        } catch (err) {
+          $("d-msg").textContent = "收藏失败：" + err.message;
+        }
+      });
+      $("d-save").addEventListener("click", async () => {
+        const payload = {
+          local_title: $("d-local").value,
+          collection: $("d-collection").value,
+          aliases: $("d-aliases").value.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
+        };
+        $("d-save").disabled = true;
+        $("d-msg").textContent = "正在保存…";
+        try {
+          const pr = await fetch(`/api/books/${encodeURIComponent(b.aid)}`, {
+            method: "PATCH", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload),
+          });
+          if (!pr.ok) throw new Error("HTTP " + pr.status);
+          const updated = await pr.json();
+          $("detail-title").textContent = updated.display_title || updated.title || "（标题待补）";
+          $("d-msg").textContent = "已保存。";
+          load();
+        } catch (err) {
+          $("d-msg").textContent = "保存失败：" + err.message;
+        } finally {
+          $("d-save").disabled = false;
+        }
+      });
+    } catch (err) {
+      $("detail-title").textContent = "详情载入失败";
+      $("detail-body").innerHTML = `<div class="empty">${esc(err.message)}<br><button id="d-retry" type="button">重试</button></div>`;
+      $("d-retry").addEventListener("click", () => link.click());
+    }
+  });
+  $("detail-close").addEventListener("click", () => detail.close());
+  detail.addEventListener("click", (e) => { if (e.target === detail) detail.close(); });
+
+  // --- collections panel (B.4) ---------------------------------------------
+  function collRow(c) {
+    return `<div class="chapter" data-cid="${c.id}">
+        <span>${esc(c.name)} <span class="hint">${c.item_count} 本</span></span>
+        <span><button type="button" class="coll-del" data-cid="${c.id}">删除清单</button></span>
+      </div>`;
+  }
+  async function loadCollections() {
+    try {
+      const r = await fetch("/api/collections");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      $("coll-list").innerHTML = d.items.length
+        ? d.items.map(collRow).join("")
+        : `<div class="empty">还没有合集。新建一个，然后在书详情里把书加进去。</div>`;
+      $("coll-list").querySelectorAll(".coll-del").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const cid = btn.dataset.cid;
+          $("coll-msg").textContent = "正在删除…";
+          try {
+            const dr = await fetch("/api/collections/" + cid, {method: "DELETE"});
+            if (!dr.ok) throw new Error("HTTP " + dr.status);
+            $("coll-msg").textContent = "已删除清单（书都还在）。";
+            await loadCollections();
+            load();
+          } catch (err) { $("coll-msg").textContent = "删除失败：" + err.message; }
+        });
+      });
+    } catch (err) {
+      $("coll-list").innerHTML = `<div class="empty">合集约载入失败：${esc(err.message)}</div>`;
+    }
+  }
+  $("coll-btn").addEventListener("click", async () => {
+    $("coll-msg").textContent = "";
+    shelfDialog.showModal();
+    await loadCollections();
+  });
+  $("coll-close").addEventListener("click", () => shelfDialog.close());
+  shelfDialog.addEventListener("click", (e) => { if (e.target === shelfDialog) shelfDialog.close(); });
+  $("coll-create").addEventListener("click", async () => {
+    const name = $("coll-name").value.trim();
+    if (!name) { $("coll-msg").textContent = "先写一个合集名。"; return; }
+    $("coll-create").disabled = true;
+    try {
+      const r = await fetch("/api/collections", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      $("coll-name").value = "";
+      $("coll-msg").textContent = "已新建：" + name;
+      await loadCollections();
+    } catch (err) {
+      $("coll-msg").textContent = "新建失败：" + err.message;
+    } finally { $("coll-create").disabled = false; }
+  });
+
+  $("unresolved-btn").addEventListener("click", async () => {
+    setStatus("正在读取未识别清单…");
+    try {
+      const r = await fetch("/api/unresolved");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      const lines = ["rel_path,reason,generation,size"].concat(
+        d.items.map(u => [u.rel_path, u.reason, u.generation, u.size]
+          .map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")));
+      const blob = new Blob(["\ufeff" + lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "jmlib-unresolved.csv";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      setStatus(`已导出 ${d.total} 条未识别记录（可在体检面板查看）。`);
+    } catch (err) { setStatus("导出失败：" + err.message, true); }
+  });
+  load();
+})();
+</script>
+</body>
+</html>

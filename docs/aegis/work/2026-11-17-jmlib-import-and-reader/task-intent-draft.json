@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "requestedOutcome": "按 2026-11-17 计划实施 A/B/C 三段：库外 143 目录全量导入与上游 ID 候选确认、自行添加漫画、阅读增强",
+  "goal": "按 2026-11-17 计划实施 A/B/C 三段：库外 143 目录全量导入与上游 ID 候选确认、自行添加漫画、阅读增强",
+  "successEvidence": [
+    "每批离线契约全绿 + 每 Phase 全量回归通过 + 真实浏览器证据 + 源目录零变化 + 上游仓库 clean + 未验准则声明"
+  ],
+  "stopCondition": "done: A/B/C 全部批次验收通过; blocked: 需要用户裁决 D-1..D-5 或 scoped confirmation; needs-verification: 契约或回归失败",
+  "nonGoals": [
+    "OPDS、多用户、AI 层、浏览器上传、常驻 watch daemon、重打 25GB"
+  ],
+  "scope": "仅 E:\\\\github\\\\jmlib 下代码与文档；计划 2026-11-17-jmlib-import-and-reader.md 的 A.1-A.6/B.1-B.4/C.1-C.4",
+  "changeKinds": [
+    "architecture+schema+ui"
+  ],
+  "riskHints": [
+    "25.3GB 唯一副本、源目录零删除、上游搜索联网边界、memory=1 真实痕迹、旧 zip ACL"
+  ]
+}

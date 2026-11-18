@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "final-state-receipt",
+  "type": "state-receipt",
+  "source": "jmlib.db + library/",
+  "summary": "STATS schemaVersion jmlib.db.v5 books 185 chapters 1474 memory 1 unresolved 861 findings 0 page_total 61199；PREFS [] BM 0 COLLS [] GOV 0/0 IDRES [] 无回滚清单；ZIPS 1474 FILES 3813；memory 仅剩用户真实痕迹 1229478",
+  "verifier": "python -c store.stats() 只读",
+  "sliceId": "final-state-receipt",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "d-tag-sidecar-fix",
+  "type": "finding",
+  "source": "src/jmlib/resolve.py fill_tags, src/jmlib/ingest.py merge_meta, .tmp/test_resolve_d.py",
+  "summary": "真实缺陷：fill_tags 原先只写 books.tags，而 indexer.rebuild 从 data/ingest_metadata.json 重建该列，导致一次 jmlib index 后 177 本标签全部消失。修复为同时写 sidecar（ingest.merge_meta），并新增 rebuild 后标签/作者仍在的回归断言；随后对真实库重跑补标签 180 本并验证 jmlib index 后 WITH_TAGS 仍为 180。",
+  "verifier": "regression: rebuild after backfill",
+  "sliceId": "D-tag-fix",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-18"
+}

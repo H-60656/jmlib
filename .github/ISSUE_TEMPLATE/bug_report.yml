@@ -1,0 +1,94 @@
+name: Bug 报告
+description: 报告一个可复现的问题（不涉及具体作品内容）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请确认：
+
+        1. 已把 `library/` 和 `data/` 从仓库目录里排除，**不要**上传库文件或归档；
+        2. 报错信息里没有 Cookie、token、`JMLIB_PIN`、绝对路径中的用户名；
+        3. 涉及具体作品时只写 **Aid / 标题 / 页数**，不要附图片或内容片段。
+
+  - type: input
+    id: version
+    attributes:
+      label: jmlib 版本
+      description: 运行 `python -m jmlib --version` 或填写 commit 短哈希
+      placeholder: 0.1.0 / a1b2c3d
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 操作系统、Python 版本、是否用 uv 安装
+      placeholder: Windows 11 / Python 3.13.15 / uv tool install
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及模块
+      description: 你是在用哪个子命令或页面时遇到问题的
+      options:
+        - migrate（归档迁移）
+        - index（重建索引）
+        - ingest（散装入库）
+        - resolve（未识别回查）
+        - promote（转正）
+        - serve / 网页界面
+        - check / health（存储体检）
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 越具体越好。命令、参数、点开的页面都写上
+      placeholder: |
+        1. python -m jmlib migrate --plan
+        2. python -m jmlib migrate --apply
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 贴报错栈或关键输出。请先脱敏
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 数据规模（多少本书/多少个 zip）、是否可稳定复现、最近的改动等
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已阅读贡献指南中的硬性约束
+          required: true
+        - label: 本 issue 不包含具体的受版权保护内容、资源链接或他人隐私信息
+          required: true

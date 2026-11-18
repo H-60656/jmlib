@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jmlib · 存储体检</title>
+<style>
+  :root { color-scheme: dark; --bg:#12151b; --panel:#1b202a; --line:#2c3442;
+          --text:#e8ecf3; --muted:#98a4b6; --accent:#6ea8fe; --danger:#ff8585;
+          --ok:#7fd1a4; --info:#8fb6ff; --warn:#ffc978; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:10px;
+           align-items:center; padding:12px 18px; background:rgba(18,21,27,.95);
+           border-bottom:1px solid var(--line); backdrop-filter:blur(6px); }
+  h1 { font-size:17px; margin:0 12px 0 0; white-space:nowrap; }
+  a.back { color:var(--accent); text-decoration:none; padding:8px 10px;
+           border:1px solid var(--line); border-radius:8px; }
+  a.back:hover { border-color:var(--accent); }
+  button { padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+           background:var(--panel); color:var(--text); cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  #status { padding:10px 18px; color:var(--muted); font-size:13px; }
+  #status.error { color:var(--danger); }
+  main { padding:0 18px 40px; display:grid; gap:14px; }
+  .notice { padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+            background:var(--panel); color:var(--muted); font-size:13px; }
+  .summary { display:flex; flex-wrap:wrap; gap:10px; }
+  .chip { padding:4px 10px; border:1px solid var(--line); border-radius:20px; font-size:12px; }
+  .section { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+             padding:14px 16px; }
+  .section h2 { font-size:15px; margin:0 0 6px; display:flex; align-items:center; gap:10px; }
+  .level { font-size:11px; padding:2px 8px; border-radius:6px; border:1px solid var(--line); }
+  .level.ok { color:var(--ok); } .level.info { color:var(--info); } .level.warn { color:var(--warn); }
+  .count { color:var(--muted); font-size:12px; margin-left:auto; font-variant-numeric:tabular-nums; }
+  .detail { font-size:13px; color:var(--text); margin:6px 0; }
+  .samples { margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:12px; }
+  .samples li { margin:3px 0; word-break:break-word; }
+  .action { margin-top:10px; padding:8px 10px; border-left:3px solid var(--accent);
+            background:#151a23; color:var(--muted); font-size:12px; border-radius:0 8px 8px 0; }
+  .action.destructive { border-left-color:var(--warn); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center; }
+  .state { font-size:12px; color:var(--muted); }
+  .state[data-s="approved"] { color:var(--ok); }
+  .state[data-s="rejected"] { color:var(--danger); }
+  dialog { border:1px solid var(--line); border-radius:12px; background:var(--panel);
+           color:var(--text); max-width:min(680px,92vw); width:100%; padding:18px; }
+  dialog::backdrop { background:rgba(0,0,0,.65); }
+  dialog h2 { font-size:16px; margin:0 40px 8px 0; }
+  .close { float:right; }
+  .manifest { max-height:44vh; overflow:auto; margin:10px 0; padding:10px 12px;
+              border:1px solid var(--line); border-radius:8px; background:#151a23;
+              font-size:12px; color:var(--muted); }
+  .manifest li { margin:4px 0; word-break:break-word; }
+  .gate { color:var(--warn); font-size:12px; margin:10px 0; }
+  .findings { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+              padding:14px 16px; }
+  .finding { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 0;
+             border-bottom:1px solid var(--line); font-size:13px; }
+  .finding:last-child { border-bottom:0; }
+  .tag { font-size:11px; padding:1px 7px; border:1px solid var(--line); border-radius:5px;
+         color:var(--muted); }
+  .empty { padding:32px 12px; text-align:center; color:var(--muted); }
+  @media (max-width:480px) { header { padding:10px 12px; } main { padding:0 12px 30px; }
+                             h1 { font-size:15px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>jmlib · 存储体检</h1>
+  <a class="back" href="/">← 返回书库</a>
+  <a class="back" href="/governance">受控治理 ↗</a>
+  <button id="refresh" type="button" aria-label="重新生成体检报告">重新检查</button>
+  <button id="export" type="button" aria-label="导出体检 CSV">导出体检 CSV</button>
+</header>
+<div id="status" role="status" aria-live="polite">正在生成只读体检报告…（读取 1455 个 zip 的目录，不解压）</div>
+<main id="main" aria-busy="true"></main>
+
+<dialog id="plan" aria-label="变更清单与裁决">
+  <button class="close" id="plan-close" type="button" aria-label="关闭">✕</button>
+  <h2 id="plan-title"></h2>
+  <div id="plan-note" class="notice" style="margin-bottom:10px"></div>
+  <div class="manifest"><ul id="plan-items" style="margin:0;padding-left:18px"></ul></div>
+  <p class="gate" id="plan-gate"></p>
+  <div class="row">
+    <button id="approve" type="button">批准裁决</button>
+    <button id="reject" type="button">驳回</button>
+    <button id="reset" type="button">撤回裁决</button>
+    <span class="state" id="plan-state" role="status" aria-live="polite"></span>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const main = $("main"), statusEl = $("status"), plan = $("plan");
+  let controller = null, report = null, findings = [], current = null, loadTimer = null;
+  const LOAD_TIMEOUT_MS = 12000;
+
+  function setStatus(msg, isError = false) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("error", isError);
+  }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function findingFor(key) { return findings.find(f => f.kind === key) || null; }
+
+  function render() {
+    main.innerHTML = "";
+    const note = document.createElement("div");
+    note.className = "notice";
+    note.textContent = report.note;
+    main.appendChild(note);
+
+    const chips = document.createElement("div");
+    chips.className = "summary";
+    const s = report.stats, sum = report.summary;
+    const parts = [
+      `${s.books} 本`, `${s.chapters} 章节`, `${s.page_total} 页`,
+      `${s.unresolved} 未识别`, `${s.memory} 记忆点`,
+      `${sum.warn} 项需留意`, `${findings.length} 条治理项`
+    ];
+    for (const p of parts) {
+      const c = document.createElement("span"); c.className = "chip"; c.textContent = p;
+      chips.appendChild(c);
+    }
+    main.appendChild(chips);
+
+    for (const sec of report.sections) {
+      const box = document.createElement("section");
+      box.className = "section";
+      const f = findingFor(sec.key);
+      const state = f ? `治理项 #${f.id} · ${f.status}` : "未记录治理项";
+      let html = `<h2><span class="level ${esc(sec.level)}">${esc(sec.level.toUpperCase())}</span>${esc(sec.title)}
+                  <span class="count">${sec.count} ${esc(sec.unit)}</span></h2>`;
+      html += `<div class="detail">${esc(sec.detail)}</div>`;
+      if (sec.samples.length) {
+        html += `<ul class="samples">` + sec.samples.map(x => `<li>${esc(x)}</li>`).join("") + `</ul>`;
+      }
+      if (sec.action) {
+        html += `<div class="action${sec.destructive ? " destructive" : ""}">→ ${esc(sec.action)}</div>`;
+      }
+      html += `<div class="row">
+                 <button type="button" data-manifest="${esc(sec.key)}" aria-label="查看 ${esc(sec.title)} 的变更清单">查看变更清单 / 裁决</button>
+                 <span class="state" data-s="${f ? esc(f.status) : "none"}">${esc(state)}</span>
+               </div>`;
+      box.innerHTML = html;
+      main.appendChild(box);
+    }
+
+    const fb = document.createElement("section");
+    fb.className = "findings";
+    fb.innerHTML = `<h2 style="font-size:15px;margin:0 0 8px">治理项（findings）</h2>` +
+      (findings.length
+        ? findings.map(f => `<div class="finding"><span class="tag">#${f.id}</span>
+             <span class="tag">${esc(f.status)}</span><span>${esc(f.kind)} · ${esc(f.target)}</span></div>`).join("")
+        : `<div class="empty">暂无治理项。体检本身不会自动创建；需要时点「查看变更清单 / 裁决」逐项记录。</div>`);
+    main.appendChild(fb);
+
+    for (const btn of main.querySelectorAll("[data-manifest]")) {
+      btn.addEventListener("click", () => openPlan(btn.dataset.manifest));
+    }
+    main.setAttribute("aria-busy", "false");
+  }
+
+  function loadFailed(msg) {
+    main.innerHTML = `<div class="empty">体检报告载入失败：${esc(msg)}<br>
+      <button id="retry" type="button">重试</button></div>`;
+    main.setAttribute("aria-busy", "false");
+    $("retry").addEventListener("click", () => load(true));
+    setStatus("体检报告载入失败：" + msg, true);
+  }
+
+  async function load(isRetry = false) {
+    if (loadTimer) clearTimeout(loadTimer);
+    if (controller) controller.abort();
+    controller = new AbortController();
+    main.innerHTML = "";
+    main.setAttribute("aria-busy", "true");
+    setStatus(isRetry ? "正在重新检查…" : "正在生成只读体检报告…（读取 1455 个 zip 的目录，不解压）");
+    loadTimer = setTimeout(() => {
+      loadTimer = null;
+      if (controller) controller.abort();
+      loadFailed("请求超时，请点「重试」重新生成报告");
+    }, LOAD_TIMEOUT_MS);
+    try {
+      const [hr, fr] = await Promise.all([
+        fetch("/api/health", {signal: controller.signal}),
+        fetch("/api/findings", {signal: controller.signal}),
+      ]);
+      if (!hr.ok) throw new Error("体检报告 HTTP " + hr.status);
+      if (!fr.ok) throw new Error("治理项 HTTP " + fr.status);
+      report = await hr.json();
+      findings = (await fr.json()).items;
+      clearTimeout(loadTimer); loadTimer = null;
+      render();
+      setStatus(`体检完成 ${report.generated_at} · 只读，未改动任何文件。`);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      clearTimeout(loadTimer); loadTimer = null;
+      loadFailed(err.message);
+    }
+  }
+
+  function planItems(sec) {
+    const lines = [];
+    if (sec.samples.length) lines.push(...sec.samples);
+    else lines.push(sec.detail);
+    lines.push("建议动作：" + (sec.action || "无需修复"));
+    return lines;
+  }
+
+  function setState(msg, status) {
+    const el = $("plan-state");
+    el.textContent = msg;
+    el.dataset.s = status || "";
+  }
+
+  function openPlan(key) {
+    const sec = report.sections.find(x => x.key === key);
+    if (!sec) return;
+    current = {key, sec, finding: findingFor(key)};
+    $("plan-title").textContent = sec.title + " · 变更清单";
+    $("plan-note").textContent = sec.detail;
+    $("plan-items").innerHTML = planItems(sec).map(x => `<li>${esc(x)}</li>`).join("");
+    $("plan-gate").textContent = sec.destructive
+      ? "⚠ 此项涉及归档文件。本页只记录裁决，绝不执行；实际变更在 P5 逐项确认、生成完整清单并保留回滚记录后进行。"
+      : "本页只记录裁决，不执行任何修复动作。";
+    const f = current.finding;
+    syncPlan();
+    setState(f ? `当前状态：${f.status}（#${f.id}）` : "尚未记录治理项", f ? f.status : "");
+    plan.showModal();
+  }
+
+  function syncPlan() {
+    // Button states only — deliberately does NOT touch the status line, so
+    // decide()'s success/error feedback survives the finally block.
+    const f = current.finding;
+    $("approve").disabled = !!f && f.status !== "pending";
+    $("reject").disabled = !!f && f.status === "rejected";
+    $("reset").disabled = !f || (f.status !== "approved" && f.status !== "rejected");
+  }
+
+  async function decide(status) {
+    const buttons = [$("approve"), $("reject"), $("reset")];
+    buttons.forEach(b => { b.disabled = true; });   // 防重复提交，finally 统一恢复
+    setState("正在提交裁决…");
+    try {
+      let f = current.finding;
+      if (!f) {
+        const r = await fetch("/api/findings", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({kind: current.key, target: current.sec.title, detail: current.sec.detail}),
+        });
+        if (!r.ok) throw new Error("创建治理项 HTTP " + r.status);
+        f = {...(await r.json()), kind: current.key, target: current.sec.title};
+        current.finding = f;
+      }
+      const target = status === "reset" ? "pending" : status;
+      const r = await fetch(`/api/findings/${f.id}/decide`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({status: target}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || ("HTTP " + r.status));
+      current.finding.status = target;
+      findings = findings.map(x => x.id === f.id ? {...x, status: target} : x);
+      if (!findings.some(x => x.id === f.id)) findings.push({...f, status: target});
+      const feedback = status === "reset" ? `已撤回裁决，回到待确认（#${f.id}）`
+                                          : `已记录：${target}（#${f.id}）`;
+      render();
+      setState(feedback, target);
+    } catch (err) {
+      setState("裁决失败：" + err.message + "（可重试）");
+    } finally {
+      syncPlan();
+    }
+  }
+
+  $("approve").addEventListener("click", () => decide("approved"));
+  $("reject").addEventListener("click", () => decide("rejected"));
+  $("reset").addEventListener("click", () => decide("reset"));
+  $("plan-close").addEventListener("click", () => plan.close());
+  plan.addEventListener("click", (e) => { if (e.target === plan) plan.close(); });
+  plan.addEventListener("close", () => { current = null; });
+  $("refresh").addEventListener("click", () => load(true));
+  $("export").addEventListener("click", () => { location.href = "/api/health/csv"; });
+  load();
+})();
+</script>
+</body>
+</html>

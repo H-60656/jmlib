@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "final-state-receipt",
+  "type": "state-reconciliation",
+  "source": ".tmp/cleanup_p5_traces.py + final Python state check",
+  "summary": "测试痕迹已清理：ledger 不存在、archive/888777 与 covers/888777 不存在、sidecar 无 888777；source zip 存在且 SHA-256 不变；FINAL_STATS books=185 chapters=1474 unresolved=861 memory=0 findings=0 page_total=61199；GOV 0 executed / 0 rolled_back / 0 actions / 4 destructive guards。",
+  "verifier": "pwsh/Python",
+  "sliceId": "closeout",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-12"
+}

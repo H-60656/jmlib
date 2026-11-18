@@ -1,0 +1,20 @@
+{
+ "schemaVersion": "aegis.schema.v0",
+ "baselineRefs": [],
+ "impactStatement": "docs/aegis/work/2026-11-17-jmlib-import-and-reader/impact-statement-draft.json",
+ "compatPlan": "转正后真实库 354 本/2130 章/89944 页与磁盘 2130 包一一对应（同卷 rename、零删除，zip 总数 2335 不变）；_unidentified 205 包与 unresolved 行完全一致；book 主键与 library/archive 字节真相未改；源目录零改动；option.yml 只读",
+ "retirementPlan": "not-applicable: 本段不退役任何路径；旧手工脚本、download_cover、旧 dir_rule、jm-view-server 仍保留（退役 trigger 未触发）",
+ "evidenceBundle": [
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-a-b-import-suite.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-browser-c4-and-c3.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-c-reader-suite.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-D-tag-fix.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-D.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-final-state-receipt.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-p1-p5-regression.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-promote-batch.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-review-batch.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-short-aid-contract.json",
+  "docs/aegis/work/2026-11-17-jmlib-import-and-reader/evidence-bundle-draft-tag-backfill.json"
+ ]
+}

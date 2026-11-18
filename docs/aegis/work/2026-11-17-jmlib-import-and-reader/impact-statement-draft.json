@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "affectedLayers": [
+    "src/jmlib, web, data schema"
+  ],
+  "owners": [
+    "src/jmlib/store.py (DB 写入口) + 4 个新 owner"
+  ],
+  "invariants": [
+    "{Aid} 是书身份；library/archive 是字节真相；标题不作键；memory/findings 不丢"
+  ],
+  "compatBoundary": "既有 185 本/1474 章/861 unresolved/61199 页零改动；schemaVersion v1->v2 可读；上游仓库零改动；option.yml 只读",
+  "nonGoals": [
+    "OPDS、多用户、AI 层、浏览器上传、常驻 watch daemon、重打 25GB"
+  ]
+}

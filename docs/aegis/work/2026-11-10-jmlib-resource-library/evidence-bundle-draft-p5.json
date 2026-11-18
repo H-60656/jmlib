@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p5-ui-feedback",
+  "type": "ui-verification",
+  "source": "pilot_snapshot after second promote and rollback",
+  "summary": "修复 load(true) 覆盖成功反馈后，真实浏览器保留 g2: promoted 888777/1 与 g2: rolled back；确认串门控、按钮禁用、4 类 Guard 只读拒绝均通过。",
+  "verifier": "pilot",
+  "sliceId": "p5",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-11-12"
+}

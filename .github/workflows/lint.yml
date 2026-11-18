@@ -1,0 +1,71 @@
+name: lint
+
+on:
+  push:
+    branches: [master, dev, "feat/**", "feature/**", "fix/**"]
+  pull_request:
+    branches: [master, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ruff:
+    name: ruff
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: python -m pip install "ruff>=0.14.11"
+
+      - name: Check
+        run: python -m ruff check --output-format=github src/ tests/
+
+      - name: Format check
+        run: python -m ruff format --check --diff src/ tests/
+
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install "mypy>=1.8"
+
+      - name: Type check
+        run: python -m mypy src/
+
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: pre-commit/action@v3.0.1
