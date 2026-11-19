@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -448,11 +449,27 @@ def _single_item(local_path: Path | str, aid: str, title: str = "") -> tuple[dic
     aid = (aid or "").strip()
     if not import_scan.AID_RE.match(aid):
         return None, [f"Aid {aid!r} is not 1-7 digits"]
-    safe_path = paths.resolve_inside_roots(local_path)
+    text = str(local_path or "").strip()
+    if not text:
+        return None, ["local_path is required"]
+    # The containment guard is restated here, inline, even though
+    # ``paths.resolve_inside_roots`` performs the same check: ``is_dir`` below is
+    # a filesystem access on a caller-supplied path, and ``py/path-injection``
+    # only clears taint when a ``str.startswith`` guard sits in the same function
+    # as that access.  The verdict is identical to the helper's.
+    candidate = paths.normalize_untrusted(text)
+    checked = str(candidate)
+    for root in paths.allowed_import_roots():
+        base = str(root)
+        if checked == base or checked.startswith(base + os.sep):
+            break
+    else:
+        return None, [f"local_path is outside the allowed import roots: {local_path}"]
+    if not candidate.is_dir():
+        return None, [f"not a directory: {candidate}"]
+    safe_path = paths.resolve_inside_roots(text)
     if safe_path is None:
         return None, [f"local_path is outside the allowed import roots: {local_path}"]
-    if not safe_path.is_dir():
-        return None, [f"not a directory: {safe_path}"]
 
     local_path = safe_path
     entry = import_scan.classify_entry(local_path)

@@ -254,19 +254,26 @@ def _join_under(root: Path, rel_path: str) -> Path | None:
     maths), and only a candidate that already provably sits under ``root`` is
     resolved — i.e. allowed to touch the filesystem.  Resolving first would mean
     asking the disk about a path the caller chose.
+
+    The check is an inline ``str.startswith`` on the normalised text rather than
+    a call to a helper: ``py/path-injection`` treats ``resolve()`` as an access
+    sink and only clears taint when the guard sits in the same function as the
+    call.
     """
     p = Path(rel_path)
     if p.is_absolute() or ".." in p.parts:
         return None
-    base = root.resolve()
+    base = str(root.resolve())
     candidate = paths.normalize_untrusted(paths.ROOT / p)
-    if not (candidate == base or candidate.is_relative_to(base)):
+    text = str(candidate)
+    if not (text == base or text.startswith(base + os.sep)):
         return None
     try:
         target = candidate.resolve()
     except (OSError, RuntimeError):
         return None
-    if not (target == base or target.is_relative_to(base)):
+    resolved = str(target)
+    if not (resolved == base or resolved.startswith(base + os.sep)):
         return None
     return target
 

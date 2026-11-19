@@ -97,15 +97,24 @@ def normalize_untrusted(raw: str | Path) -> Path:
     return Path(os.path.abspath(os.path.normpath(os.path.expanduser(str(raw)))))
 
 
-def contained_in(target: Path, roots: list[Path]) -> bool:
+def contained_in(target: Path | str, roots: list[Path]) -> bool:
     """True when ``target`` already lives under one of ``roots``.
 
-    Both sides must be absolute paths; callers guarantee that.  Written as a
-    single ``is_relative_to`` test so the containment relation is explicit in
-    one expression rather than implied by a ``parents`` membership scan —
-    static analysers cannot follow the latter.
+    Written with ``str.startswith`` rather than ``Path.is_relative_to``: both
+    express the same relation, but only ``startswith`` is modelled as a
+    ``SafeAccessCheck`` by CodeQL.  ``os.sep`` is appended so ``/a/bc`` is not
+    mistaken for a child of ``/a/b``.
+
+    Callers that perform a filesystem call on the result must re-state the
+    predicate inline instead of calling this function — see
+    :func:`resolve_inside_roots`.
     """
-    return any(target == root or target.is_relative_to(root) for root in roots)
+    text = str(target)
+    for root in roots:
+        base = str(root)
+        if text == base or text.startswith(base + os.sep):
+            return True
+    return False
 
 
 def resolve_inside_roots(raw: str | Path) -> Path | None:
@@ -121,19 +130,34 @@ def resolve_inside_roots(raw: str | Path) -> Path | None:
     provably lives under an allowed root is resolved — i.e. allowed to touch the
     filesystem.  Resolving first would mean asking the disk about a path chosen
     by the caller, which is exactly what the whitelist exists to prevent.
+
+    The check is spelled out inline at each filesystem call — ``str.startswith``
+    on the normalised text, not a call to :func:`contained_in` — because
+    ``py/path-injection`` only clears taint when the guard sits in the same
+    function as the call; ``resolve()`` counts as one.
     """
     text = str(raw or "").strip()
     if not text:
         return None
     candidate = normalize_untrusted(text)
     roots = allowed_import_roots()
-    if not contained_in(candidate, roots):
+    checked = str(candidate)
+    for root in roots:
+        base = str(root)
+        if checked == base or checked.startswith(base + os.sep):
+            break
+    else:
         return None
     try:
         target = candidate.resolve()
     except (OSError, RuntimeError):
         return None
-    if not contained_in(target, roots):
+    resolved = str(target)
+    for root in roots:
+        base = str(root)
+        if resolved == base or resolved.startswith(base + os.sep):
+            break
+    else:
         # a symlink inside an allowed root pointing outside it
         return None
     return target
