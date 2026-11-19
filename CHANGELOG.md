@@ -27,9 +27,10 @@
 
 ### Security
 - 🛡️ **导入根白名单下沉到库层**：白名单与「路径必须落在根内」的判定原只活在 HTTP 层，`import_apply` 作为库函数仍会接受调用方给的任意路径并去读它；现在 `paths.allowed_import_roots()` / `paths.contained_in()` / `paths.resolve_inside_roots()` 成为唯一所有者，API、CLI、测试走同一条规则，越界路径在触碰文件系统之前就被拒绝。
-- 🛡️ **治理层路径改为结构化校验**：`governance` 新增 `_unresolved_source()` / `_archive_target()`，把「必须位于 `library/_unidentified/`」「必须位于 `library/archive/`」写成 `Path.is_relative_to()` 判定，替代原先的字符串前缀与 `parents` 成员扫描。
+- 🛡️ **治理层路径改为结构化校验**：`governance` 新增 `_unresolved_source()` / `_archive_target()`，把「必须位于 `library/_unidentified/`」「必须位于 `library/archive/`」写成显式包含性判定，替代原先的字符串前缀与 `parents` 成员扫描；判定发生在 `resolve()` 之前，只有已证明在根内的路径才允许触碰文件系统。
 - 🛡️ **异常文本不再外泄**：`governance` 的错误串只报异常**类名**，不再拼接 `exc` 正文（正文可能带绝对路径等本机信息）。
 - 🛡️ **标题卷号正则改为有界**：`_VOLUME_IN_TEXT_RE` 的每个空白段改成 `\s{0,4}`。旧式 `(?:第|第\s*)?\s*` 在 `第` 后接长空格串时，每个起始位置都要重走一遍空白，搜索退化为二次（实测 2k 空格 0.26 s、8k 空格 4.1 s）；有界后同为线性（2k 0.46 ms、8k 1.71 ms），22 条真实标题语义用例不变。
+- 🧪 **包含性契约纳入仓库测试**：新增 `tests/test_paths_containment.py`（11 条），把白名单门禁钉进 CI —— 根自身/子目录放行，同名前缀兄弟目录、`..` 穿越、根外绝对路径、空路径一律拒绝，并断言 `normalize_untrusted` 不碰磁盘。判为误报的 3 条 `py/path-injection` 告警及其依据记录在 `docs/security/codeql-dismissals.md`。
 
 ### Fixed
 - 🏷️ **标签在重建后消失**：`fill_tags` 原先只写 `books.tags`，而 `jmlib index` 从 `data/ingest_metadata.json` 重建该列，导致一次重建后 177 本书的标签全部丢失；改为同时写侧车元数据（`ingest.merge_meta`），重建后标签存活。
