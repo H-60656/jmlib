@@ -25,6 +25,12 @@
 - 📐 **工程配置对齐 GitHub 仓库标准**：补齐 README / LICENSE / CHANGELOG / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT / issue 与 PR 模板 / CI / Dependabot / CODEOWNERS；`pyproject.toml` 补全 readme、license、authors、urls、classifiers、ruff、mypy、dev 依赖组。
 - 🧹 **代码风格统一**：ruff `select = ["E","F","W","I","UP"]`、`line-length = 120`、`target-version = "py310"`，源码与测试全部格式化通过。
 
+### Security
+- 🛡️ **导入根白名单下沉到库层**：白名单与「路径必须落在根内」的判定原只活在 HTTP 层，`import_apply` 作为库函数仍会接受调用方给的任意路径并去读它；现在 `paths.allowed_import_roots()` / `paths.contained_in()` / `paths.resolve_inside_roots()` 成为唯一所有者，API、CLI、测试走同一条规则，越界路径在触碰文件系统之前就被拒绝。
+- 🛡️ **治理层路径改为结构化校验**：`governance` 新增 `_unresolved_source()` / `_archive_target()`，把「必须位于 `library/_unidentified/`」「必须位于 `library/archive/`」写成 `Path.is_relative_to()` 判定，替代原先的字符串前缀与 `parents` 成员扫描。
+- 🛡️ **异常文本不再外泄**：`governance` 的错误串只报异常**类名**，不再拼接 `exc` 正文（正文可能带绝对路径等本机信息）。
+- 🛡️ **标题卷号正则改为有界**：`_VOLUME_IN_TEXT_RE` 的每个空白段改成 `\s{0,4}`。旧式 `(?:第|第\s*)?\s*` 在 `第` 后接长空格串时，每个起始位置都要重走一遍空白，搜索退化为二次（实测 2k 空格 0.26 s、8k 空格 4.1 s）；有界后同为线性（2k 0.46 ms、8k 1.71 ms），22 条真实标题语义用例不变。
+
 ### Fixed
 - 🏷️ **标签在重建后消失**：`fill_tags` 原先只写 `books.tags`，而 `jmlib index` 从 `data/ingest_metadata.json` 重建该列，导致一次重建后 177 本书的标签全部丢失；改为同时写侧车元数据（`ingest.merge_meta`），重建后标签存活。
 - 🔢 **短 Aid 被契约误拒**：Aid 正则原为 4–7 位，导致 `121`、`579` 这类真实专辑既无法转正、又会在重建时被静默丢弃；改为身份位 1–7 位、提示位 4 位起的两套显式规则，并补上逐模块同一性测试。

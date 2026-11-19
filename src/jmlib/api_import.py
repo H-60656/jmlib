@@ -15,7 +15,6 @@ PIN gate as the rest of the app.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -87,24 +86,16 @@ class SingleRollbackIn(BaseModel):
 # Root whitelist: an import root must be one the user put in the environment or
 # the documented drop folder.  This blocks "read any path on disk" through the
 # scan endpoint.
+#
+# The rule itself lives in :func:`jmlib.paths.resolve_inside_roots` so the
+# library layer (``import_apply``) enforces exactly the same containment that
+# this HTTP layer does.  What stays here is only the HTTP answer: which status
+# code and which message a rejected path produces.
 # ---------------------------------------------------------------------------
 
 
 def allowed_roots() -> list[Path]:
-    raw = os.environ.get("JMLIB_IMPORT_ROOTS", "")
-    roots: list[Path] = []
-    for chunk in raw.split(os.pathsep):
-        chunk = chunk.strip().strip('"')
-        if chunk:
-            roots.append(Path(chunk))
-    roots.append(paths.INCOMING)
-    out: list[Path] = []
-    for root in roots:
-        try:
-            out.append(root.resolve())
-        except OSError:
-            continue
-    return out
+    return paths.allowed_import_roots()
 
 
 def resolve_root(raw: str = "") -> Path:
@@ -115,22 +106,22 @@ def resolve_root(raw: str = "") -> Path:
             if candidate.is_dir():
                 return candidate
         raise HTTPException(status_code=400, detail="no import root configured")
-    try:
-        target = Path(raw).expanduser().resolve()
-    except (OSError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad import root: {exc}") from exc
-    if not target.is_dir():
-        raise HTTPException(status_code=400, detail=f"import root is not a directory: {target}")
-    for root in roots:
-        if target == root or root in target.parents:
-            return target
-    raise HTTPException(
-        status_code=403,
-        detail=(
-            "import root is outside the allowed roots; set JMLIB_IMPORT_ROOTS "
-            f"(allowed: {', '.join(str(r) for r in roots)})"
-        ),
-    )
+    target = paths.resolve_inside_roots(raw)
+    if target is None:
+        try:
+            outside = Path(raw).expanduser().resolve()
+        except (OSError, RuntimeError) as exc:
+            raise HTTPException(status_code=400, detail=f"bad import root: {exc}") from exc
+        if not outside.is_dir():
+            raise HTTPException(status_code=400, detail=f"import root is not a directory: {outside}")
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "import root is outside the allowed roots; set JMLIB_IMPORT_ROOTS "
+                f"(allowed: {', '.join(str(r) for r in roots)})"
+            ),
+        )
+    return target
 
 
 def _manifest_or_404() -> dict:
@@ -341,19 +332,18 @@ def _resolve_inside_roots(raw: str) -> Path:
     text = (raw or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="local_path is required")
+    target = paths.resolve_inside_roots(text)
+    if target is not None:
+        return target
     try:
-        target = Path(text).expanduser().resolve()
+        outside = Path(text).expanduser().resolve()
     except (OSError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=f"bad local_path: {exc}") from exc
-    roots = allowed_roots()
-    for root in roots:
-        if target == root or root in target.parents:
-            return target
     raise HTTPException(
         status_code=403,
         detail=(
-            "local_path is outside the allowed roots; set JMLIB_IMPORT_ROOTS "
-            f"(allowed: {', '.join(str(r) for r in roots)})"
+            f"local_path is outside the allowed roots: {outside}; set JMLIB_IMPORT_ROOTS "
+            f"(allowed: {', '.join(str(r) for r in allowed_roots())})"
         ),
     )
 

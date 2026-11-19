@@ -244,17 +244,53 @@ def change_manifest(kind: str, limit: int = 40) -> dict:
 # Reversible action: promote one unresolved zip into a real book.
 # ---------------------------------------------------------------------------
 
+_UNRESOLVED_PREFIX = "library/_unidentified/"
+
+
+def _unresolved_source(rel_path: str) -> tuple[Path | None, str | None]:
+    """Map an ``library/_unidentified/...`` relative path to an absolute file.
+
+    This is the single place the project turns client-supplied text into a
+    filesystem path, so the containment rule lives here and nowhere else: the
+    path must be relative, free of ``..`` parts, below the unresolved root, and
+    the resolved result must still sit inside that root.
+    """
+    p = Path(rel_path)
+    if p.is_absolute() or ".." in p.parts or not p.as_posix().startswith(_UNRESOLVED_PREFIX):
+        return None, "invalid unresolved rel_path"
+    root = paths.UNIDENTIFIED.resolve()
+    src = (paths.ROOT / p).resolve()
+    if not src.is_relative_to(root):
+        return None, "invalid unresolved rel_path"
+    return src, None
+
+
+def _archive_target(rel_path: str) -> Path | None:
+    """Map an ``library/archive/{Aid}/{pindex}.zip`` relative path to an absolute file.
+
+    Only ever called with a string this module built from a validated Aid and
+    pindex, but resolved and re-checked anyway so the invariant holds without
+    trusting the caller.
+    """
+    p = Path(rel_path)
+    if p.is_absolute() or ".." in p.parts:
+        return None
+    root = paths.ARCHIVE.resolve()
+    dst = (paths.ROOT / p).resolve()
+    if not dst.is_relative_to(root):
+        return None
+    return dst
+
 
 def _validate(rel_path: str, aid: str, pindex: int | None, title: str) -> tuple[dict | None, str | None]:
     if not AID_RE.fullmatch(aid):
         return None, "invalid aid (expected 1-7 digits)"
-    p = Path(rel_path)
-    if p.is_absolute() or ".." in p.parts or not p.as_posix().startswith("library/_unidentified/"):
-        return None, "invalid unresolved rel_path"
+    src, err = _unresolved_source(rel_path)
+    if err or src is None:
+        return None, err or "invalid unresolved rel_path"
     row = store.get_unresolved(rel_path)
     if row is None:
         return None, "rel_path is not a known unresolved item"
-    src = paths.ROOT / p
     if not src.is_file():
         return None, "source zip missing on disk"
     try:
@@ -262,7 +298,9 @@ def _validate(rel_path: str, aid: str, pindex: int | None, title: str) -> tuple[
             members = cover.image_members(zf)
             first = members[0] if members else ""
     except (zipfile.BadZipFile, OSError) as exc:
-        return None, f"source zip unreadable: {type(exc).__name__}: {exc}"
+        # Report the exception *class* only: the message can carry an absolute
+        # path, and plan errors travel back over HTTP.
+        return None, f"source zip unreadable ({type(exc).__name__})"
     if not members:
         return None, "source zip has no image members"
 
@@ -358,8 +396,12 @@ def promote_apply(plan: dict, confirm: str) -> dict:
             "confirm_token": token,
         }
 
-    src = paths.ROOT / Path(fresh["from"])
-    dst = paths.ROOT / Path(fresh["to"])
+    src, err = _unresolved_source(fresh["from"])
+    if err or src is None:
+        return {"ok": False, "status": "invalid", "error": err or "invalid promote source"}
+    dst = _archive_target(fresh["to"])
+    if dst is None:
+        return {"ok": False, "status": "invalid", "error": "invalid promote target"}
     made_parent = not dst.parent.exists()
     try:
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -377,7 +419,7 @@ def promote_apply(plan: dict, confirm: str) -> dict:
             "ok": False,
             "status": "refused",
             "error": (
-                f"rename blocked by file permissions ({type(exc).__name__}: {exc}). "
+                f"rename blocked by file permissions ({type(exc).__name__}). "
                 "这个旧 zip 未继承当前服务进程的文件授权；请以完全权限运行 "
                 "jmlib serve（或重新授权该归档文件）后重试。"
                 "未移动任何文件、未写库、未记录治理动作。"
@@ -461,8 +503,10 @@ def promote_rollback(action_id: str) -> dict:
         return {"ok": False, "error": f"unknown action {action_id}"}
     if action["status"] != "executed":
         return {"ok": False, "error": f"action {action_id} is {action['status']}, not executed"}
-    dst = paths.ROOT / Path(action["to"])
-    src = paths.ROOT / Path(action["from"])
+    dst = _archive_target(action["to"])
+    src, src_err = _unresolved_source(action["from"])
+    if dst is None or src is None:
+        return {"ok": False, "error": f"recorded paths are not reversible: {src_err or 'invalid target'}"}
     if not dst.is_file():
         return {"ok": False, "error": f"target zip missing, cannot rollback: {action['to']}"}
     if src.exists():
@@ -482,7 +526,7 @@ def promote_rollback(action_id: str) -> dict:
             "ok": False,
             "status": "refused",
             "error": (
-                f"rename back blocked by file permissions ({type(exc).__name__}: {exc}). "
+                f"rename back blocked by file permissions ({type(exc).__name__}). "
                 "请以完全权限运行 jmlib serve（或重新授权该归档文件）后重试。"
                 "目标 zip 仍在原处；未改库、未改动作状态。"
             ),

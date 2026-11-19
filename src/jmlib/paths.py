@@ -3,10 +3,17 @@
 All project-internal paths live here.  External (pre-migration) source roots are
 never hard-coded: they are supplied to ``migrate --plan`` via --source/--loose
 and recorded in the generated manifest.
+
+This module is also the single owner of the *import-root whitelist* and of the
+containment rule that goes with it.  Both used to live in the HTTP layer, which
+meant a library module (``import_apply``) accepted a client-supplied path without
+being able to check it; the rule now sits here so every caller — API, CLI, or
+test — enforces the same thing.
 """
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 ROOT: Path = Path(__file__).resolve().parents[2]
@@ -46,6 +53,68 @@ def rel(path: str | Path) -> str:
         return p.resolve().relative_to(ROOT).as_posix()
     except ValueError:
         return p.as_posix()
+
+
+# ---------------------------------------------------------------------------
+# Import roots: which directories may the server read book sources from?
+# ---------------------------------------------------------------------------
+#
+# The whitelist exists so "scan a folder" can never become "read any path on
+# disk".  It is one of allowed roots under the environment variable plus the
+# documented drop folder, and every read of a client-supplied directory must go
+# through :func:`resolve_inside_roots` below.
+
+
+def allowed_import_roots() -> list[Path]:
+    """The resolved directories an import may read from.
+
+    ``JMLIB_IMPORT_ROOTS`` is a path-separator list; ``library/_incoming`` is
+    always present so a drop folder works with no configuration at all.
+    """
+    roots: list[Path] = []
+    for chunk in os.environ.get("JMLIB_IMPORT_ROOTS", "").split(os.pathsep):
+        chunk = chunk.strip().strip('"')
+        if chunk:
+            roots.append(Path(chunk))
+    roots.append(INCOMING)
+    out: list[Path] = []
+    for root in roots:
+        try:
+            out.append(root.resolve())
+        except OSError:
+            continue
+    return out
+
+
+def contained_in(target: Path, roots: list[Path]) -> bool:
+    """True when ``target`` already lives under one of ``roots``.
+
+    Both sides must be resolved absolute paths; callers guarantee that.  Written
+    as a single ``is_relative_to`` test so the containment relation is explicit
+    in one expression rather than implied by a ``parents`` membership scan —
+    static analysers cannot follow the latter.
+    """
+    return any(target == root or target.is_relative_to(root) for root in roots)
+
+
+def resolve_inside_roots(raw: str | Path) -> Path | None:
+    """Resolve one directory and return it only if it is inside the whitelist.
+
+    Returns ``None`` — never a path — when the input is outside the allowed
+    roots, so a caller cannot accidentally use an unvalidated value.  The
+    caller decides whether "outside the roots" is a 403 or a refused plan; this
+    function only answers the containment question.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    try:
+        target = Path(text).expanduser().resolve()
+    except (OSError, RuntimeError):
+        return None
+    if not contained_in(target, allowed_import_roots()):
+        return None
+    return target
 
 
 def ensure_dirs() -> None:

@@ -434,15 +434,27 @@ def _single_token(aid: str, chapters: int, images: int, fingerprint: str) -> str
     return f"ADD {aid} / {chapters} chapters / {images} images #{fingerprint}"
 
 
-def _single_item(local_path: Path, aid: str, title: str = "") -> tuple[dict | None, list[str]]:
-    """Classify one directory into a single-book item (read-only)."""
+def _single_item(local_path: Path | str, aid: str, title: str = "") -> tuple[dict | None, list[str]]:
+    """Classify one directory into a single-book item (read-only).
+
+    The path is checked against the import-root whitelist here, not only in the
+    HTTP layer: ``apply_single`` may be called from the CLI or a test, and a
+    caller-supplied path must never describe a directory the project was not
+    told it could read.  ``paths.resolve_inside_roots`` returns ``None`` for
+    anything outside the roots, so the refusal happens before any filesystem
+    call — there is no unvalidated path to walk.
+    """
     conflicts: list[str] = []
     aid = (aid or "").strip()
     if not import_scan.AID_RE.match(aid):
         return None, [f"Aid {aid!r} is not 1-7 digits"]
-    if not local_path.is_dir():
-        return None, [f"not a directory: {local_path}"]
+    safe_path = paths.resolve_inside_roots(local_path)
+    if safe_path is None:
+        return None, [f"local_path is outside the allowed import roots: {local_path}"]
+    if not safe_path.is_dir():
+        return None, [f"not a directory: {safe_path}"]
 
+    local_path = safe_path
     entry = import_scan.classify_entry(local_path)
     chapters: dict[str, list[str]] = {}
     if entry["kind"] == "nested":
