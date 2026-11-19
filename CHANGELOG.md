@@ -24,6 +24,7 @@
 ### Changed
 - 📐 **工程配置对齐 GitHub 仓库标准**：补齐 README / LICENSE / CHANGELOG / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT / issue 与 PR 模板 / CI / Dependabot / CODEOWNERS；`pyproject.toml` 补全 readme、license、authors、urls、classifiers、ruff、mypy、dev 依赖组。
 - 🧹 **代码风格统一**：ruff `select = ["E","F","W","I","UP"]`、`line-length = 120`、`target-version = "py310"`，源码与测试全部格式化通过。
+- 🧪 **批次契约脚本进仓**：原先散在 `.tmp`（被 `.gitignore` 排除）的 20 个批次契约脚本（`contract_a1.py` … `contract_p5.py`）移入 `tests/contracts/`，由新增的 `tests/test_contracts.py` 逐个以独立子进程拉起 —— 它们在模块顶层就重定向 `jmlib.paths` 并清空自己的 scratch 树，同进程 import 会让一个套件的重定向泄漏到下一个。CI 的 `pytest` 与 `unittest discover` 从此真正覆盖这批契约（本地 `pytest -q` 从 14 条增至 16 条 + 20 个 subtest）。硬编码的本机绝对路径同时改为 `Path(__file__).resolve().parents[2]` 推导。
 
 ### Security
 - 🛡️ **导入根白名单下沉到库层**：白名单与「路径必须落在根内」的判定原只活在 HTTP 层，`import_apply` 作为库函数仍会接受调用方给的任意路径并去读它；现在 `paths.allowed_import_roots()` / `paths.contained_in()` / `paths.resolve_inside_roots()` 成为唯一所有者，API、CLI、测试走同一条规则，越界路径在触碰文件系统之前就被拒绝。
