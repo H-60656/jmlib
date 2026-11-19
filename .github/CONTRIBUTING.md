@@ -131,7 +131,8 @@ src/jmlib/
   health.py        存储体检
   upstream.py      上游查询（唯一联网模块）
 web/               六个页面 + assets（无构建步骤，原生 JS）
-tests/             契约测试
+tests/             unittest 契约（migrate / 导入根包含性）+ test_contracts.py 派发器
+tests/contracts/   20 个批次契约脚本（A/B/C/D/P 各族），各自独立进程运行
 docs/aegis/        设计计划与证据归档（历史记录，非用户文档）
 ```
 
@@ -173,6 +174,16 @@ Cookie / token、本地绝对路径（`E:\github\...` 这类）。`.gitignore` �
 `tests/test_migrate.py` 的 `check_*` 函数是双跑设计：`python tests/test_migrate.py` 用
 `.tmp/contracts` 下的临时树（受限沙箱里也能跑），`pytest` 则用 `tmp_path` fixture。
 新测试建议沿用这个形状。
+
+`tests/contracts/` 里的 20 个批次脚本（`contract_a1.py` … `contract_p5.py`）原本是
+`.tmp` 下的探索脚本，现在由 `tests/test_contracts.py` 逐个以**独立子进程**拉起。它们
+在模块顶层就重定向 `jmlib.paths` 并清空自己的 scratch 树，所以不能同进程 import ——
+一个套件的重定向会泄漏到下一个，清空还会把上一个套件的夹具删掉。加新契约脚本时：
+
+- 文件名以 `contract_` 开头、放在 `tests/contracts/`，派发器会自动发现；
+- 仓库根用 `Path(__file__).resolve().parents[2]`（文件在 `tests/contracts/` 下，比原来深一层）；
+- 结尾用非零退出码表示失败，最后一行打印人类可读的判定；
+- 全套跑一遍约 50 秒，`pytest -q` 与 `unittest discover` 都会带上它。
 
 ## 提交信息
 
