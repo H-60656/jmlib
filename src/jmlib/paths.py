@@ -86,12 +86,23 @@ def allowed_import_roots() -> list[Path]:
     return out
 
 
+def normalize_untrusted(raw: str | Path) -> Path:
+    """Turn untrusted text into a normalised absolute path **without** touching disk.
+
+    ``expanduser`` + ``normpath`` + ``abspath`` are pure string operations: no
+    ``stat``, no symlink resolution, nothing that could be talked into reading a
+    file.  That matters for the order of operations below — the containment test
+    must be able to run *before* anything the filesystem would act on.
+    """
+    return Path(os.path.abspath(os.path.normpath(os.path.expanduser(str(raw)))))
+
+
 def contained_in(target: Path, roots: list[Path]) -> bool:
     """True when ``target`` already lives under one of ``roots``.
 
-    Both sides must be resolved absolute paths; callers guarantee that.  Written
-    as a single ``is_relative_to`` test so the containment relation is explicit
-    in one expression rather than implied by a ``parents`` membership scan —
+    Both sides must be absolute paths; callers guarantee that.  Written as a
+    single ``is_relative_to`` test so the containment relation is explicit in
+    one expression rather than implied by a ``parents`` membership scan —
     static analysers cannot follow the latter.
     """
     return any(target == root or target.is_relative_to(root) for root in roots)
@@ -104,15 +115,26 @@ def resolve_inside_roots(raw: str | Path) -> Path | None:
     roots, so a caller cannot accidentally use an unvalidated value.  The
     caller decides whether "outside the roots" is a 403 or a refused plan; this
     function only answers the containment question.
+
+    Order matters and is not cosmetic: the containment check runs on the
+    *normalised* path first (string maths only), and only a path that already
+    provably lives under an allowed root is resolved — i.e. allowed to touch the
+    filesystem.  Resolving first would mean asking the disk about a path chosen
+    by the caller, which is exactly what the whitelist exists to prevent.
     """
     text = str(raw or "").strip()
     if not text:
         return None
+    candidate = normalize_untrusted(text)
+    roots = allowed_import_roots()
+    if not contained_in(candidate, roots):
+        return None
     try:
-        target = Path(text).expanduser().resolve()
+        target = candidate.resolve()
     except (OSError, RuntimeError):
         return None
-    if not contained_in(target, allowed_import_roots()):
+    if not contained_in(target, roots):
+        # a symlink inside an allowed root pointing outside it
         return None
     return target
 

@@ -247,6 +247,30 @@ def change_manifest(kind: str, limit: int = 40) -> dict:
 _UNRESOLVED_PREFIX = "library/_unidentified/"
 
 
+def _join_under(root: Path, rel_path: str) -> Path | None:
+    """Join a repo-relative path, keeping it inside ``root`` without reading outside it.
+
+    The containment test runs on the *normalised* join first (pure string
+    maths), and only a candidate that already provably sits under ``root`` is
+    resolved — i.e. allowed to touch the filesystem.  Resolving first would mean
+    asking the disk about a path the caller chose.
+    """
+    p = Path(rel_path)
+    if p.is_absolute() or ".." in p.parts:
+        return None
+    base = root.resolve()
+    candidate = paths.normalize_untrusted(paths.ROOT / p)
+    if not (candidate == base or candidate.is_relative_to(base)):
+        return None
+    try:
+        target = candidate.resolve()
+    except (OSError, RuntimeError):
+        return None
+    if not (target == base or target.is_relative_to(base)):
+        return None
+    return target
+
+
 def _unresolved_source(rel_path: str) -> tuple[Path | None, str | None]:
     """Map an ``library/_unidentified/...`` relative path to an absolute file.
 
@@ -255,12 +279,10 @@ def _unresolved_source(rel_path: str) -> tuple[Path | None, str | None]:
     path must be relative, free of ``..`` parts, below the unresolved root, and
     the resolved result must still sit inside that root.
     """
-    p = Path(rel_path)
-    if p.is_absolute() or ".." in p.parts or not p.as_posix().startswith(_UNRESOLVED_PREFIX):
+    if not Path(rel_path).as_posix().startswith(_UNRESOLVED_PREFIX):
         return None, "invalid unresolved rel_path"
-    root = paths.UNIDENTIFIED.resolve()
-    src = (paths.ROOT / p).resolve()
-    if not src.is_relative_to(root):
+    src = _join_under(paths.UNIDENTIFIED, rel_path)
+    if src is None:
         return None, "invalid unresolved rel_path"
     return src, None
 
@@ -272,14 +294,7 @@ def _archive_target(rel_path: str) -> Path | None:
     pindex, but resolved and re-checked anyway so the invariant holds without
     trusting the caller.
     """
-    p = Path(rel_path)
-    if p.is_absolute() or ".." in p.parts:
-        return None
-    root = paths.ARCHIVE.resolve()
-    dst = (paths.ROOT / p).resolve()
-    if not dst.is_relative_to(root):
-        return None
-    return dst
+    return _join_under(paths.ARCHIVE, rel_path)
 
 
 def _validate(rel_path: str, aid: str, pindex: int | None, title: str) -> tuple[dict | None, str | None]:

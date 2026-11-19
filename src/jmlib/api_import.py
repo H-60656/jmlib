@@ -108,12 +108,10 @@ def resolve_root(raw: str = "") -> Path:
         raise HTTPException(status_code=400, detail="no import root configured")
     target = paths.resolve_inside_roots(raw)
     if target is None:
-        try:
-            outside = Path(raw).expanduser().resolve()
-        except (OSError, RuntimeError) as exc:
-            raise HTTPException(status_code=400, detail=f"bad import root: {exc}") from exc
-        if not outside.is_dir():
-            raise HTTPException(status_code=400, detail=f"import root is not a directory: {outside}")
+        # A refusal reads nothing: the path is reported as text, unnormalised.
+        # "not under an allowed root" and "not a directory" are the same verdict
+        # to the caller — both mean "point the scan somewhere I am allowed to
+        # read" — so one 403 covers them without a stat on an untrusted path.
         raise HTTPException(
             status_code=403,
             detail=(
@@ -335,10 +333,7 @@ def _resolve_inside_roots(raw: str) -> Path:
     target = paths.resolve_inside_roots(text)
     if target is not None:
         return target
-    try:
-        outside = Path(text).expanduser().resolve()
-    except (OSError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad local_path: {exc}") from exc
+    outside = paths.normalize_untrusted(text)
     raise HTTPException(
         status_code=403,
         detail=(
