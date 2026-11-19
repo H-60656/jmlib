@@ -32,6 +32,7 @@ discovers them; :mod:`jmlib.idres` re-exports them for the decision layer.
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -363,8 +364,26 @@ def _unwrap_container(base: Path, max_depth: int = 3) -> Path:
 
 
 def scan(root: Path | str, known_aids: set[str] | None = None) -> dict:
-    """Classify every top-level directory under ``root`` (read-only)."""
-    requested = Path(root)
+    """Classify every top-level directory under ``root`` (read-only).
+
+    ``root`` is checked against the import-root whitelist here, not only at the
+    HTTP call site: a scan walks the whole tree, so a caller-supplied directory
+    must be a directory the project was told it could read.  The containment
+    guard is written inline (``str.startswith`` on the normalised text) because
+    ``py/path-injection`` only clears taint when the guard sits in the same
+    function as the filesystem access, and every access below hangs off this one.
+    """
+    text = str(root or "").strip()
+    if not text:
+        raise FileNotFoundError("import root is required")
+    requested = paths.normalize_untrusted(text)
+    checked = str(requested)
+    for allowed in paths.allowed_import_roots():
+        prefix = str(allowed)
+        if checked == prefix or checked.startswith(prefix + os.sep):
+            break
+    else:
+        raise PermissionError(f"import root is outside the allowed roots: {text}")
     if not requested.is_dir():
         raise FileNotFoundError(f"import root is not a directory: {requested}")
 
