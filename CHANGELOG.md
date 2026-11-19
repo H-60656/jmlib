@@ -31,6 +31,8 @@
 - 🛡️ **异常文本不再外泄**：`governance` 的错误串只报异常**类名**，不再拼接 `exc` 正文（正文可能带绝对路径等本机信息）。
 - 🛡️ **标题卷号正则改为有界**：`_VOLUME_IN_TEXT_RE` 的每个空白段改成 `\s{0,4}`。旧式 `(?:第|第\s*)?\s*` 在 `第` 后接长空格串时，每个起始位置都要重走一遍空白，搜索退化为二次（实测 2k 空格 0.26 s、8k 空格 4.1 s）；有界后同为线性（2k 0.46 ms、8k 1.71 ms），22 条真实标题语义用例不变。
 - 🧪 **包含性契约纳入仓库测试**：新增 `tests/test_paths_containment.py`（11 条），把白名单门禁钉进 CI —— 根自身/子目录放行，同名前缀兄弟目录、`..` 穿越、根外绝对路径、空路径一律拒绝，并断言 `normalize_untrusted` 不碰磁盘。判为误报的 3 条 `py/path-injection` 告警及其依据记录在 `docs/security/codeql-dismissals.md`。
+- 🛡️ **扫描入口自己校验导入根**：`import_scan.scan()` 过去只信调用方（HTTP 层 `resolve_root`）已做过白名单，库层直接 `iterdir`/`rglob` 走整棵树；现在它自己归一化路径、按 `paths.allowed_import_roots()` 判定包含性，越界抛 `PermissionError`，空路径抛 `FileNotFoundError`。
+- 🛡️ **手填预览不再提前 resolve**：`import_apply.plan_single()` 原先把调用方给的路径先 `resolve()` 再交给 `_single_item` 校验，等于在校验之前就问磁盘；现在只做 `expanduser()`，归一化与白名单判定统一由 `_single_item` 完成。
 
 ### Fixed
 - 🏷️ **标签在重建后消失**：`fill_tags` 原先只写 `books.tags`，而 `jmlib index` 从 `data/ingest_metadata.json` 重建该列，导致一次重建后 177 本书的标签全部丢失；改为同时写侧车元数据（`ingest.merge_meta`），重建后标签存活。

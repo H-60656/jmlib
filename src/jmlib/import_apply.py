@@ -509,8 +509,14 @@ def _single_item(local_path: Path | str, aid: str, title: str = "") -> tuple[dic
 
 
 def plan_single(local_path: str | Path, aid: str, title: str = "") -> dict:
-    """Read-only preview of a hand-add, with a server-issued scoped token."""
-    path = Path(local_path).expanduser().resolve()
+    """Read-only preview of a hand-add, with a server-issued scoped token.
+
+    The path is handed to :func:`_single_item` **unresolved**: resolving here
+    would ask the disk about a path the caller chose before the whitelist has
+    had a chance to refuse it.  ``_single_item`` normalises, checks the roots,
+    and only then touches the filesystem.
+    """
+    path = Path(local_path).expanduser()
     item, conflicts = _single_item(path, aid, title)
     if item is None:
         return {
