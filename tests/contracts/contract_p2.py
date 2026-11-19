@@ -16,6 +16,13 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from jmlib import api, cover, store  # noqa: E402
 
+# Reader navigation is checked against a populated catalog; a fresh clone has no
+# ``library/`` at all (25 GB, gitignored), so "find a multi-chapter book" has no
+# answer — skip rather than fail.
+if not store.list_books():
+    print("SKIP P2 contract: empty catalog (no indexed library in this checkout)")
+    raise SystemExit(0)
+
 fails: list[str] = []
 TOTAL = 0
 original_memory: dict = {}

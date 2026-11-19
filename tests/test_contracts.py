@@ -56,12 +56,17 @@ class ContractSuites(unittest.TestCase):
 
     def test_every_contract_passes(self) -> None:
         failures: list[str] = []
+        skipped: list[str] = []
         for script in _scripts():
             with self.subTest(contract=script.stem):
                 code, output = _run(script)
                 if code != 0:
                     tail = "\n".join(output.strip().splitlines()[-25:])
                     failures.append(f"{script.name} exited {code}\n{tail}")
+                elif "SKIP " in output:
+                    skipped.append(script.name)
+        if skipped:
+            print(f"\nskipped (need a populated library/): {', '.join(skipped)}")
         if failures:
             self.fail("contract suites failed:\n\n" + "\n\n".join(failures))
 

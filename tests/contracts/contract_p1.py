@@ -15,6 +15,14 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from jmlib import api, store  # noqa: E402
 
+# These P-series checks validate relationships in a *populated* catalog, so they
+# only run where a real library was migrated and indexed.  A fresh clone has no
+# ``library/`` (it is 25 GB of archives and gitignored), which makes "there is a
+# book to sample" unanswerable rather than false — skip, do not fail.
+if not store.list_books():
+    print("SKIP P1 contract: empty catalog (no indexed library in this checkout)")
+    raise SystemExit(0)
+
 fails: list[str] = []
 # Live baseline: the catalog legitimately grows (P0 migration -> P4 ingest),
 # so never hard-code P1-era counts.  Each check validates a relationship.
